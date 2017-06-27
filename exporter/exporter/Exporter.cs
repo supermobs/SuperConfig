@@ -161,7 +161,7 @@ namespace exporter
             for (int i = 4; i <= sheet.LastRowNum; i++)
             {
                 IRow row = sheet.GetRow(i);
-                if (row == null || row.FirstCellNum > 0)
+                if (row == null || row.FirstCellNum > 0 || row.LastCellNum <= 1)
                     continue;
 
                 List<object> values = new List<object>();
@@ -172,7 +172,8 @@ namespace exporter
                     switch (data.types[j])
                     {
                         case "int":
-                            codevalue = cell == null ? 0 : Convert.ToInt32(cell.NumericCellValue); break;
+                            codevalue = cell == null || cell.CellType == CellType.Blank ? 0 : (cell.CellType == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
+                              int.Parse(cell.StringCellValue)); break;
                         case "string":
                             codevalue = cell == null ? "" : cell.ToString(); break;
                         case "double":
@@ -199,9 +200,10 @@ namespace exporter
 
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
-                if (file.Name.StartsWith("公式.") || file.Name.StartsWith("~$"))
+                if (file.Name.StartsWith("公式.") || file.Name.StartsWith("~$") ||
+                    (file.Extension != ".xlsx" && file.Extension != ".xls"))
                     continue;
-                
+
                 FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 IWorkbook workbook = file.Extension == ".xlsx" ? new XSSFWorkbook(fs) as IWorkbook : new HSSFWorkbook(fs) as IWorkbook;
                 for (int i = 0; i < workbook.NumberOfSheets; i++)
@@ -221,7 +223,7 @@ namespace exporter
 
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
-                if (!file.Name.StartsWith("公式."))
+                if (!file.Name.StartsWith("公式.") || (file.Extension != ".xlsx" && file.Extension != ".xls"))
                     continue;
 
                 FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);

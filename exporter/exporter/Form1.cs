@@ -20,7 +20,9 @@ namespace exporter
             if (args.Length > 0)
             {
                 if (Export())
+                {
                     Console.WriteLine("Complete");
+                }
                 Environment.Exit(0);
             }
             else
