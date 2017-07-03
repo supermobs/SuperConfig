@@ -161,25 +161,32 @@ namespace exporter
             for (int i = 4; i <= sheet.LastRowNum; i++)
             {
                 IRow row = sheet.GetRow(i);
-                if (row == null || row.FirstCellNum > 0 || row.LastCellNum <= 1)
+                if (row == null || row.FirstCellNum > 0 || row.GetCell(0).CellType == CellType.Blank)
                     continue;
 
                 List<object> values = new List<object>();
                 for (int j = 0; j < data.cols.Count; j++)
                 {
                     ICell cell = row.GetCell(data.cols[j]);
-                    object codevalue = null;
-                    switch (data.types[j])
+                    try
                     {
-                        case "int":
-                            codevalue = cell == null || cell.CellType == CellType.Blank ? 0 : (cell.CellType == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
-                              int.Parse(cell.StringCellValue)); break;
-                        case "string":
-                            codevalue = cell == null ? "" : cell.ToString(); break;
-                        case "double":
-                            codevalue = cell == null ? 0 : cell.NumericCellValue; break;
+                        object codevalue = null;
+                        switch (data.types[j])
+                        {
+                            case "int":
+                                codevalue = cell == null || cell.CellType == CellType.Blank ? 0 : (cell.CellType == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
+                                  int.Parse(cell.StringCellValue)); break;
+                            case "string":
+                                codevalue = cell == null ? "" : cell.ToString(); break;
+                            case "double":
+                                codevalue = cell == null ? 0 : cell.NumericCellValue; break;
+                        }
+                        values.Add(codevalue);
                     }
-                    values.Add(codevalue);
+                    catch
+                    {
+                        return "数据格式有误， 第" + (cell.RowIndex + 1) + "行第" + (cell.ColumnIndex + 1) + "列， SheetName = " + tableName + "，FileNames = " + fileName;
+                    }
                 }
 
                 if (ids.Contains((int)values[0]))
