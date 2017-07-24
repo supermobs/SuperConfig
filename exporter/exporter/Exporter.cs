@@ -177,7 +177,7 @@ namespace exporter
                                 codevalue = cell == null || cell.CellType == CellType.Blank ? 0 : (cell.CellType == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
                                   int.Parse(cell.StringCellValue)); break;
                             case "string":
-                                codevalue = cell == null ? "" : cell.ToString(); break;
+                                codevalue = cell == null ? "" : cell.StringCellValue; break;
                             case "double":
                                 codevalue = cell == null ? 0 : cell.NumericCellValue; break;
                         }
