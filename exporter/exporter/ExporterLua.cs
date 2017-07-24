@@ -1,8 +1,10 @@
 ﻿using NPOI.SS.UserModel;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace exporter
 {
@@ -149,64 +151,74 @@ namespace exporter
             string dataDir = exportDir + "data" + Path.DirectorySeparatorChar;
             if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);
             Directory.CreateDirectory(dataDir);
+
+            List<string> results = new List<string>();
             foreach (var data in datas.Values)
             {
-                List<string> groupDeclaras = new List<string>();
-                Dictionary<string, List<string>> groupids = new Dictionary<string, List<string>>();
-
-                foreach (var values in data.dataContent)
+                ThreadPool.QueueUserWorkItem(ooo =>
                 {
-                    Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
-                    while (enumerator.MoveNext())
+                    List<string> groupDeclaras = new List<string>();
+                    Dictionary<string, List<string>> groupids = new Dictionary<string, List<string>>();
+
+                    foreach (var values in data.dataContent)
                     {
-                        string groupDeclara = "data.groups[\"" + enumerator.Current.Key + "\"]";
-                        if (!groupDeclaras.Contains(groupDeclara))
-                            groupDeclaras.Add(groupDeclara);
-                        for (int j = 0; j < enumerator.Current.Value.Length; j++)
+                        Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
+                        while (enumerator.MoveNext())
                         {
-                            object cv = values[data.groupindexs[enumerator.Current.Key][j]];
-                            groupDeclara += "[" + (cv is string ? "\"" + cv + "\"" : cv) + "]";
+                            string groupDeclara = "data.groups[\"" + enumerator.Current.Key + "\"]";
                             if (!groupDeclaras.Contains(groupDeclara))
                                 groupDeclaras.Add(groupDeclara);
+                            for (int j = 0; j < enumerator.Current.Value.Length; j++)
+                            {
+                                object cv = values[data.groupindexs[enumerator.Current.Key][j]];
+                                groupDeclara += "[" + (cv is string ? "\"" + cv + "\"" : cv) + "]";
+                                if (!groupDeclaras.Contains(groupDeclara))
+                                    groupDeclaras.Add(groupDeclara);
+                            }
+                            if (!groupids.ContainsKey(groupDeclara))
+                                groupids.Add(groupDeclara, new List<string>());
+                            groupids[groupDeclara].Add(values[0].ToString());
                         }
-                        if (!groupids.ContainsKey(groupDeclara))
-                            groupids.Add(groupDeclara, new List<string>());
-                        groupids[groupDeclara].Add(values[0].ToString());
                     }
-                }
 
-                Dictionary<string, List<string>> groupsItemCount = new Dictionary<string, List<string>>();
-                foreach (var key in groupids.Keys)
-                {
-                    string[] arr = key.Split(']');
-                    string title = "";
-                    for (int i = 0; i < arr.Length - 2; i++)
+                    Dictionary<string, List<string>> groupsItemCount = new Dictionary<string, List<string>>();
+                    foreach (var key in groupids.Keys)
                     {
-                        title += arr[i] + "]";
-                        if (!groupsItemCount.ContainsKey(title))
-                            groupsItemCount[title] = new List<string>();
-                        if (!groupsItemCount[title].Contains(title + arr[i + 1] + "]"))
-                            groupsItemCount[title].Add(title + arr[i + 1] + "]");
+                        string[] arr = key.Split(']');
+                        string title = "";
+                        for (int i = 0; i < arr.Length - 2; i++)
+                        {
+                            title += arr[i] + "]";
+                            if (!groupsItemCount.ContainsKey(title))
+                                groupsItemCount[title] = new List<string>();
+                            if (!groupsItemCount[title].Contains(title + arr[i + 1] + "]"))
+                                groupsItemCount[title].Add(title + arr[i + 1] + "]");
+                        }
                     }
-                }
 
-                File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
-                    CodeTemplate.Get("template_data")
-                    .Replace("[DATA_TABLE_NAME]", data.name)
-                    .Replace("[DATA_KEYS]", string.Join(",\n", data.keys.Select(engname => { return "\"" + engname + "\"--[[" + data.keyNames[data.keys.IndexOf(engname)] + "]]"; })))
-                    .Replace("[DATA_COLS]", string.Join("\n", data.cols.Select(i => { return "data.cols[" + (i + 1) + "] = " + (data.cols.IndexOf(i) + 1); })))
-                    .Replace("[DATA_IDS]", string.Join(",", data.ids))
-                    .Replace("[DECLARA_GROUPS]", string.Join("\n", groupDeclaras.Select(gd => { return gd + " = {}"; })))
-                    .Replace("[DATA_GROUPS]", string.Join("\n", groupids.Select(o => { return o.Key + " = {" + string.Join(",", o.Value) + "}"; })))
-                    .Replace("[DATA_GROUPS_COUNT]", string.Join("\n", groupsItemCount.Select(o =>
-                    {
-                        string nkey = o.Key.Replace("data.groups[", "data.groupscount[");
-                        return nkey + " = {}\n" + nkey + ".count = " + o.Value.Count;
-                    })))
-                    .Replace("[DATA_LINES]", string.Join("\n", data.dataContent.Select(values => { return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v => { return v is string ? "[[" + v + "]]" : v; })) + "}"; })))
-                    , new UTF8Encoding(false));
+                    File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
+                        CodeTemplate.Get("template_data")
+                        .Replace("[DATA_TABLE_NAME]", data.name)
+                        .Replace("[DATA_KEYS]", string.Join(",\n", data.keys.Select(engname => { return "\"" + engname + "\"--[[" + data.keyNames[data.keys.IndexOf(engname)] + "]]"; })))
+                        .Replace("[DATA_COLS]", string.Join("\n", data.cols.Select(i => { return "data.cols[" + (i + 1) + "] = " + (data.cols.IndexOf(i) + 1); })))
+                        .Replace("[DATA_IDS]", string.Join(",", data.ids))
+                        .Replace("[DECLARA_GROUPS]", string.Join("\n", groupDeclaras.Select(gd => { return gd + " = {}"; })))
+                        .Replace("[DATA_GROUPS]", string.Join("\n", groupids.Select(o => { return o.Key + " = {" + string.Join(",", o.Value) + "}"; })))
+                        .Replace("[DATA_GROUPS_COUNT]", string.Join("\n", groupsItemCount.Select(o =>
+                        {
+                            string nkey = o.Key.Replace("data.groups[", "data.groupscount[");
+                            return nkey + " = {}\n" + nkey + ".count = " + o.Value.Count;
+                        })))
+                        .Replace("[DATA_LINES]", string.Join("\n", data.dataContent.Select(values => { return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v => { return v is string ? "[[" + v + "]]" : v; })) + "}"; })))
+                        , new UTF8Encoding(false));
+
+                    lock (results)
+                        results.Add(string.Empty);
+                });
             }
 
+            while (results.Count < datas.Values.Count)
+                Thread.Sleep(TimeSpan.FromSeconds(0.01));
             return string.Empty;
         }
     }
