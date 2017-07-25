@@ -29,7 +29,7 @@ namespace exporter
         public bool evaluate { get; private set; }
         public CustomWorkbookType type { get; private set; }
 
-        CustomWorkbook(FileInfo file, string envName)
+        CustomWorkbook(FileInfo file)
         {
             ThreadPool.QueueUserWorkItem(o =>
             {
@@ -73,7 +73,7 @@ namespace exporter
                 lock (allBooks)
                 {
                     allBooks.Add(this);
-                    evaluatorEnv.Add(envName, evaluator);
+                    evaluatorEnv.Add(file.Name, evaluator);
                 }
             });
         }
@@ -93,10 +93,10 @@ namespace exporter
             // 遍历导出目录
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
-                if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls" && file.Extension != ".csv"))
+                if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls"))
                     continue;
 
-                CustomWorkbook book = new CustomWorkbook(file, file.Name);
+                CustomWorkbook book = new CustomWorkbook(file);
                 book.type = file.Name.StartsWith("公式.") ? CustomWorkbookType.ExportFormal : CustomWorkbookType.ExportData;
                 totalCount++;
             }
@@ -109,7 +109,7 @@ namespace exporter
                 foreach (string reffile in File.ReadAllLines(refConfPath))
                 {
                     var file = new FileInfo(reffile);
-                    CustomWorkbook book = new CustomWorkbook(file, file.FullName.Replace("\\", "/").Substring(2));
+                    CustomWorkbook book = new CustomWorkbook(file);
                     book.type = CustomWorkbookType.Referenced;
                     totalCount++;
                 }
