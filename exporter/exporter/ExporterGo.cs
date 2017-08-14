@@ -225,7 +225,7 @@ namespace exporter
 
                     sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
                     sb.AppendLine("func init(){");
-                    sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"config/" + data.name + ".json\")");
+                    sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
                     sb.AppendLine("if err != nil { log.Fatal(err) }");
                     sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
                     sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
