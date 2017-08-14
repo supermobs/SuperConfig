@@ -53,7 +53,7 @@ namespace exporter
             Dictionary<CellCoord, List<CellCoord>> abouts = new Dictionary<CellCoord, List<CellCoord>>();
 
 
-            sb.AppendLine("package conf");
+            sb.AppendLine("package config");
             sb.AppendLine("type " + sheet.SheetName + "FormulaSheet struct {");
             sb.AppendLine("formulaSheet");
             sb.AppendLine("}");
@@ -190,7 +190,7 @@ namespace exporter
                     string bigname = data.name.Substring(0, 1).ToUpper() + data.name.Substring(1);
 
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("package conf");
+                    sb.AppendLine("package config");
                     sb.AppendLine("import (");
                     sb.AppendLine("\"encoding/json\"");
                     sb.AppendLine("\"io/ioutil\"");

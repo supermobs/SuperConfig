@@ -182,11 +182,13 @@ namespace exporter
                                 switch (data.types[j])
                                 {
                                     case "int":
-                                        codevalue = Convert.ToInt32(cellValue.NumberValue); break;
+                                        codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt32(cellValue.NumberValue) :
+                                            string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
                                     case "string":
                                         codevalue = string.IsNullOrEmpty(cellValue.StringValue) ? string.Empty : cellValue.StringValue; break;
                                     case "double":
-                                        codevalue = cellValue.NumberValue; break;
+                                        codevalue = cellValue.CellType == CellType.Numeric ? cellValue.NumberValue :
+                                            string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
                                 }
                             }
                             else
