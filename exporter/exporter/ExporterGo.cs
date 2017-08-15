@@ -156,7 +156,8 @@ namespace exporter
             if (Directory.Exists(configExportDir)) Directory.Delete(configExportDir, true);
             Directory.CreateDirectory(configExportDir);
             if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
-            new DirectoryInfo(codeExportDir).GetFiles("*Export.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
 
             // 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
@@ -175,8 +176,8 @@ namespace exporter
             // 写公式
             foreach (var formula in formulaContents)
             {
-                File.WriteAllText(codeExportDir + formula.Key + "FormulaExport.go", formula.Value, new UTF8Encoding(false));
-                info.Arguments = " -w " + codeExportDir + formula.Key + "FormulaExport.go";
+                File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
+                info.Arguments = " -w " + codeExportDir + "formula_" + formula.Key.ToLower() + ".go";
                 fmting.Add(Process.Start(info));
             }
 
@@ -272,11 +273,11 @@ namespace exporter
                         sb.AppendLine("}");
                     }
 
-                    File.WriteAllText(codeExportDir + bigname + "Export.go", sb.ToString());
+                    File.WriteAllText(codeExportDir + "data_" + data.name + ".go", sb.ToString());
 
                     lock (fmting)
                     {
-                        info.Arguments = " -w " + codeExportDir + bigname + "Export.go";
+                        info.Arguments = " -w " + codeExportDir + "data_" + data.name + ".go";
                         fmting.Add(Process.Start(info));
                     }
 
