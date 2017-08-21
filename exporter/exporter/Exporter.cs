@@ -91,9 +91,10 @@ namespace exporter
                         cols.Add(i);
                         keys.Add(engRow.GetCell(i).StringCellValue);
                         keyNames.Add((cnRow == null || cnRow.GetCell(i) == null) ? "" : cnRow.GetCell(i).StringCellValue.Replace("\n", " "));
-                        types.Add(tRow.GetCell(i).StringCellValue);
-                        if (!dataTypes.Contains(tRow.GetCell(i).StringCellValue))
-                            return "未知的数据类型" + tRow.GetCell(i).StringCellValue + "，SheetName = " + tableName + "，FileName = " + book.fileName;
+                        string type = (tRow == null || tRow.GetCell(i) == null) ? " " : tRow.GetCell(i).StringCellValue;
+                        types.Add(type);
+                        if (!dataTypes.Contains(type))
+                            return "未知的数据类型" + type + "，SheetName = " + tableName + "，FileName = " + book.fileName;
                     }
 
                     if (data.isnew)
@@ -216,7 +217,10 @@ namespace exporter
                         }
                     }
 
-                    if (ids.Contains((int)values[0]))
+                    int id = (int)values[0];
+                    if (id == 0) // id=0忽略，方便公式生成id
+                        continue;
+                    if (ids.Contains(id))
                         return "索引冲突 [" + values[0] + "]，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
                     // 添加id
                     ids.Add((int)values[0]);

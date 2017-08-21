@@ -347,6 +347,9 @@ namespace exporter
                 });
             }
 
+            while (fmting.Count < formulaContents.Count + datas.Values.Count)
+                Thread.Sleep(10);
+
             foreach (var pro in fmting)
                 pro.WaitForExit();
             while (results.Count < datas.Values.Count * 2)
