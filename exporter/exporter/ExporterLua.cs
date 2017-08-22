@@ -26,7 +26,7 @@ namespace exporter
                     throw new System.Exception("检查输入第" + (i + 1) + "行");
                 string note = cell1.StringCellValue;
                 string name = cell2.StringCellValue;
-                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
                 declaras.Add(string.Format("{0} = {1}--[[{2}]]", name, i + 1, note));
             }
@@ -130,6 +130,22 @@ namespace exporter
                     .Replace("[COL]", item.Key.col.ToString())
                     .Replace("[CONTENT]", string.Join(",", item.Value.Select(CellCoord.ToString)))
                     );
+            }
+
+            // 枚举器
+            sb.AppendLine("\n-- enumerator");
+            sb.AppendLine("sheet.enumerator = {}");
+            foreach (var item in FormulaEnumerator.GetList(sheet))
+            {
+                sb.AppendLine("sheet.enumerator." + item.name + " = {}");
+                sb.AppendLine("sheet.enumerator." + item.name + ".start = " + (item.start + 1));
+                sb.AppendLine("sheet.enumerator." + item.name + ".over = " + (item.end + 1));
+                sb.AppendLine("sheet.enumerator." + item.name + ".div = " + item.div);
+                sb.AppendLine("sheet.enumerator." + item.name + ".key = " + (item.key - 1));
+                sb.AppendLine("sheet.enumerator." + item.name + ".propertys = {");
+                for (int i = 0; i < item.propertys.Count; i++)
+                    sb.AppendLine("\"" + item.propertys[i] + "\", --" + item.notes[i]);
+                sb.AppendLine("}");
             }
 
             // 结果

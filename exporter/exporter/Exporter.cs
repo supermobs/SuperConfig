@@ -11,6 +11,70 @@ using System.Threading;
 
 namespace exporter
 {
+    class FormulaEnumerator
+    {
+        public int start;
+        public int end;
+        public int div;
+        public int key;
+        public string name;
+        public string fullName;
+        public List<string> propertys;
+        public List<string> notes;
+
+        public static List<FormulaEnumerator> GetList(ISheet sheet)
+        {
+            Dictionary<string, FormulaEnumerator> dict = new Dictionary<string, FormulaEnumerator>();
+            for (int i = 0; i <= sheet.LastRowNum; i++)
+            {
+                try
+                {
+                    IRow row = sheet.GetRow(i);
+                    if (row == null) continue;
+                    ICell cell = row.GetCell(3, MissingCellPolicy.RETURN_NULL_AND_BLANK);
+                    if (cell == null || cell.CellType != CellType.String) continue;
+                    string[] arr = cell.StringCellValue.Split('_');
+
+                    if (arr[0] == "LS" && arr.Length == 4)
+                    {
+                        var item = new FormulaEnumerator();
+                        if (int.TryParse(arr[1], out item.div) && int.TryParse(arr[2], out item.key))
+                        {
+                            dict.Add(arr[3], item);
+                            item.start = i + 1;
+                            item.name = arr[3].Substring(0, 1).ToUpper() + arr[3].Substring(1);
+                            item.fullName = sheet.SheetName.ToLower() + "_" + arr[3];
+
+                            item.propertys = new List<string>();
+                            item.notes = new List<string>();
+                            for (int j = i + 1; j < i + 1 + item.div; j++)
+                            {
+                                string str = sheet.GetRow(j).GetCell(4).StringCellValue;
+                                if (str.StartsWith("_")) str = str.Substring(1);
+                                item.propertys.Add(str.Substring(0, 1).ToUpper() + str.Substring(1, str.Length - 2));
+                                str = sheet.GetRow(j).GetCell(3).StringCellValue;
+                                if (str.EndsWith("1")) str = str.Substring(0, str.Length - 1);
+                                item.notes.Add(str);
+                            }
+                        }
+                    }
+
+                    if (arr[0] == "LE" && arr.Length == 2 && dict.ContainsKey(arr[1]))
+                    {
+                        dict[arr[1]].end = i;
+                    }
+                }
+                catch
+                {
+                    throw new Exception("公式表获取枚举时出错，" + sheet.SheetName + " 第" + i + "行");
+                }
+            }
+
+            return new List<FormulaEnumerator>(dict.Values);
+        }
+    }
+
+
     public static partial class Exporter
     {
         static Dictionary<string, string> formulaContents = new Dictionary<string, string>();

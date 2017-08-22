@@ -29,17 +29,17 @@ namespace exporter
                     throw new System.Exception("检查输入第" + (i + 1) + "行");
                 string note = cell1.StringCellValue;
                 string name = cell2.StringCellValue;
-                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
                 sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float64 {//" + note);
-                sb.AppendLine("return ins.get(" + ((i + 1) * 100 + col + 3) + ")");
+                sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
                 sb.AppendLine("}");
 
                 if (canWrite)
                 {
                     sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float64) {//" + note);
-                    sb.AppendLine("ins.set(" + ((i + 1) * 100 + col + 3) + ",v)");
+                    sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
             }
@@ -83,12 +83,12 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 100 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
+                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 100 + colnum + 1) + "] = func(ins *formulaSheet) float64 {");
+                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float64 {");
                         sb.AppendLine("return " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
@@ -129,7 +129,7 @@ namespace exporter
 
             // 数据影响关联
             foreach (var item in abouts)
-                sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation[" + (item.Key.row * 100 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 100 + c.col; })) + "}");
+                sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "}");
             sb.AppendLine("}");
 
             // 创建
@@ -144,6 +144,46 @@ namespace exporter
             // 声明
             AppendGoDeclara(sheet, 0, true, sb);
             AppendGoDeclara(sheet, 3, false, sb);
+
+            // 枚举器
+            foreach (var item in FormulaEnumerator.GetList(sheet))
+            {
+                // 写结构
+                sb.AppendLine("type " + item.fullName + " struct {");
+                sb.AppendLine("sheet *" + sheet.SheetName + "FormulaSheet");
+                sb.AppendLine("line int");
+                for (int i = 0; i < item.propertys.Count; i++)
+                    sb.AppendLine(item.propertys[i] + " float64 // " + item.notes[i]);
+                sb.AppendLine("}");
+
+                // MoveNext
+                sb.AppendLine("func (ins *" + item.fullName + ") MoveNext() bool {");
+                sb.AppendLine("if ins.line <= 0 {");
+                sb.AppendLine("ins.line = " + (item.start + 1) * 1000);
+                sb.AppendLine("} else {");
+                sb.AppendLine("ins.line = ins.line + " + item.div * 1000);
+                sb.AppendLine("}");
+                sb.AppendLine("if ins.line >= " + (item.end + 1) * 1000 + " {");
+                sb.AppendLine("return false");
+                sb.AppendLine("}");
+                sb.AppendLine("");
+                sb.AppendLine("if ins.sheet.get(ins.line+" + (6 + 1000 * (item.key - 1)) + ") == 0 {");
+                sb.AppendLine("return ins.MoveNext()");
+                sb.AppendLine("}");
+                sb.AppendLine("");
+                for (int i = 0; i < item.propertys.Count; i++)
+                    sb.AppendLine("ins." + item.propertys[i] + " = ins.sheet.get(ins.line+" + (6 + 1000 * i) + ")");
+                sb.AppendLine("return true");
+                sb.AppendLine("}");
+                sb.AppendLine("");
+
+                // GetEnumerator
+                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + item.name + "Enumerator() float64 {");
+                sb.AppendLine("enumerator := &" + item.fullName + "{}");
+                sb.AppendLine("enumerator.sheet = ins");
+                sb.AppendLine("return enumerator");
+                sb.AppendLine("}");
+            }
 
             // 结果
             formulaContents.Add(sheet.SheetName.Substring(0, 1).ToUpper() + sheet.SheetName.Substring(1), sb.ToString());
