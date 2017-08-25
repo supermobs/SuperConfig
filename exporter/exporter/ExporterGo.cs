@@ -32,13 +32,13 @@ namespace exporter
                 if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
-                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float64 {//" + note);
+                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float32 {//" + note);
                 sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
                 sb.AppendLine("}");
 
                 if (canWrite)
                 {
-                    sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float64) {//" + note);
+                    sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float32) {//" + note);
                     sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
@@ -61,9 +61,9 @@ namespace exporter
             sb.AppendLine("var " + sheet.SheetName + "FormaulaTemplate *formulaSheetTemplate");
             sb.AppendLine("func init() {");
             sb.AppendLine(sheet.SheetName + "FormaulaTemplate = new(formulaSheetTemplate)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas = make(map[int32]float64)");
+            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas = make(map[int32]float32)");
             sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation = make(map[int32][]int32)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs = make(map[int32]func(*formulaSheet) float64)");
+            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs = make(map[int32]func(*formulaSheet) float32)");
 
             // 数据内容
             for (int rownum = 0; rownum <= sheet.LastRowNum; rownum++)
@@ -88,7 +88,7 @@ namespace exporter
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float64 {");
+                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
                         sb.AppendLine("return " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
@@ -136,7 +136,7 @@ namespace exporter
             sb.AppendLine("func New" + sheet.SheetName.Substring(0, 1).ToUpper() + sheet.SheetName.Substring(1) + "Formula() *" + sheet.SheetName + "FormulaSheet {");
             sb.AppendLine("formula:= new(" + sheet.SheetName + "FormulaSheet)");
             sb.AppendLine("formula.template = " + sheet.SheetName + "FormaulaTemplate");
-            sb.AppendLine("formula.datas = make(map[int32]float64)");
+            sb.AppendLine("formula.datas = make(map[int32]float32)");
             sb.AppendLine("return formula");
             sb.AppendLine("}");
 
@@ -151,9 +151,9 @@ namespace exporter
                 // 写结构
                 sb.AppendLine("type " + item.fullName + " struct {");
                 sb.AppendLine("sheet *" + sheet.SheetName + "FormulaSheet");
-                sb.AppendLine("line int");
+                sb.AppendLine("line int32");
                 for (int i = 0; i < item.propertys.Count; i++)
-                    sb.AppendLine(item.propertys[i] + " float64 // " + item.notes[i]);
+                    sb.AppendLine(item.propertys[i] + " float32 // " + item.notes[i]);
                 sb.AppendLine("}");
 
                 // MoveNext
@@ -178,7 +178,7 @@ namespace exporter
                 sb.AppendLine("");
 
                 // GetEnumerator
-                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + item.name + "Enumerator() float64 {");
+                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
                 sb.AppendLine("enumerator := &" + item.fullName + "{}");
                 sb.AppendLine("enumerator.sheet = ins");
                 sb.AppendLine("return enumerator");
@@ -193,8 +193,10 @@ namespace exporter
         public static string ExportGo(string codeExportDir, string configExportDir)
         {
             // 目录清理
-            if (Directory.Exists(configExportDir)) Directory.Delete(configExportDir, true);
-            Directory.CreateDirectory(configExportDir);
+            if (Directory.Exists(configExportDir))
+                new DirectoryInfo(configExportDir).GetFiles().ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            else
+                Directory.CreateDirectory(configExportDir);
             if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
             new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
             new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
@@ -203,22 +205,15 @@ namespace exporter
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
             typeconvert.Add("int", "int32");
             typeconvert.Add("string", "string");
-            typeconvert.Add("double", "float64");
+            typeconvert.Add("double", "float32");
 
-            ProcessStartInfo info = new ProcessStartInfo();
-            info.FileName = "gofmt";
-            info.WindowStyle = ProcessWindowStyle.Hidden;
-            info.UseShellExecute = true;
-            info.ErrorDialog = true;
-
-            List<Process> fmting = new List<Process>();
+            int goWriteCount = 0;
 
             // 写公式
             foreach (var formula in formulaContents)
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
-                info.Arguments = " -w " + codeExportDir + "formula_" + formula.Key.ToLower() + ".go";
-                fmting.Add(Process.Start(info));
+                Interlocked.Increment(ref goWriteCount);
             }
 
             List<string> results = new List<string>();
@@ -308,25 +303,18 @@ namespace exporter
                     {
                         if (data.types[i] == "string")
                             continue;
-                        sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float64) float64 {");
-                        sb.AppendLine("return float64(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
+                        sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float32) float32 {");
+                        sb.AppendLine("return float32(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
                         sb.AppendLine("}");
                     }
 
                     File.WriteAllText(codeExportDir + "data_" + data.name + ".go", sb.ToString());
-
-                    lock (fmting)
-                    {
-                        info.Arguments = " -w " + codeExportDir + "data_" + data.name + ".go";
-                        fmting.Add(Process.Start(info));
-                    }
+                    Interlocked.Increment(ref goWriteCount);
 
                     lock (results)
                         results.Add(string.Empty);
                 });
             }
-
-
 
             // 写json
             foreach (var data in datas.Values)
@@ -387,11 +375,18 @@ namespace exporter
                 });
             }
 
-            while (fmting.Count < formulaContents.Count + datas.Values.Count)
+            // 格式化go代码
+            while (goWriteCount < formulaContents.Count + datas.Values.Count)
                 Thread.Sleep(10);
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.FileName = "gofmt";
+            info.WindowStyle = ProcessWindowStyle.Hidden;
+            info.UseShellExecute = true;
+            info.ErrorDialog = false;
+            info.Arguments = "-w " + codeExportDir;
+            Process.Start(info).WaitForExit();
 
-            foreach (var pro in fmting)
-                pro.WaitForExit();
+            // 等待所有文件完成
             while (results.Count < datas.Values.Count * 2)
                 Thread.Sleep(TimeSpan.FromSeconds(0.01));
             return string.Empty;
