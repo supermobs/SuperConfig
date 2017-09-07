@@ -42,7 +42,7 @@ namespace exporter
 
             // 开头
             sb.AppendLine(CodeTemplate.Get("template_title")
-                .Replace("[SHEET_NAME]", sheet.SheetName)
+                .Replace("[SHEET_NAME]", sheet.SheetName.Substring(3))
                 .Replace("[USEFUL_ROW_COUNT]", (sheet.LastRowNum + 1).ToString())
                 );
 
@@ -149,7 +149,7 @@ namespace exporter
             }
 
             // 结果
-            formulaContents.Add(sheet.SheetName, sb.ToString());
+            formulaContents.Add(sheet.SheetName.Substring(3), sb.ToString());
             return string.Empty;
         }
 
@@ -225,7 +225,17 @@ namespace exporter
                             string nkey = o.Key.Replace("data.groups[", "data.groupscount[");
                             return nkey + " = {}\n" + nkey + ".count = " + o.Value.Count;
                         })))
-                        .Replace("[DATA_LINES]", string.Join("\n", data.dataContent.Select(values => { return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v => { return v is string ? "[[" + v + "]]" : v; })) + "}"; })))
+                        .Replace("[DATA_LINES]", string.Join("\n", data.dataContent.Select(values =>
+                        {
+                            return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v =>
+                            {
+                                if (v is string) return "[[" + v + "]]";
+                                if (v is string[]) return "{[[" + string.Join("]],[[", v as string[]) + "]]}";
+                                if (v is int[]) return "{" + string.Join(",", v as int[]) + "}";
+                                if (v is double[]) return "{" + string.Join(",", v as double[]) + "}";
+                                return v;
+                            })) + "}";
+                        })))
                         , new UTF8Encoding(false));
 
                     lock (results)

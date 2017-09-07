@@ -62,18 +62,26 @@ namespace exporter
             //return true;
 
             CustomWorkbook.Init(paths[0]);
+            try
+            {
+                return
+                        // 读取xlsx
+                        CheckError(Exporter.ReadDataXlsx())
+                        // 读 lua 公式
+                        && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))
+                        // 导出lua文件
+                        && CheckError(Exporter.ExportLua(paths[1]))
+                        // 读 go 公式
+                        && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))
+                        // 导出go文件
+                        && CheckError(Exporter.ExportGo(paths[2], paths[3]));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
 
-            return
-                    // 读取xlsx
-                    CheckError(Exporter.ReadDataXlsx())
-                    // 读 lua 公式
-                    && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))
-                    // 导出lua文件
-                    && CheckError(Exporter.ExportLua(paths[1]))
-                    // 读 go 公式
-                    && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))
-                    // 导出go文件
-                    && CheckError(Exporter.ExportGo(paths[2], paths[3]));
+            return false;
         }
 
         List<Label> labels = new List<Label>();

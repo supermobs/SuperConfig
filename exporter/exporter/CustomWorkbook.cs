@@ -11,8 +11,7 @@ namespace exporter
 {
     public enum CustomWorkbookType
     {
-        ExportData,
-        ExportFormal,
+        Export,
         Referenced
     }
 
@@ -21,12 +20,11 @@ namespace exporter
         public static List<CustomWorkbook> allBooks = new List<CustomWorkbook>();
         static Dictionary<string, IFormulaEvaluator> evaluatorEnv = new Dictionary<string, IFormulaEvaluator>();
 
-        static List<string> evaluateBooks = new List<string>();
+        public static List<string> evaluateSheets = new List<string>();
 
         public string fileName { get; private set; }
         public IFormulaEvaluator evaluator { get; private set; }
         public IWorkbook workbook { get; private set; }
-        public bool evaluate { get; private set; }
         public CustomWorkbookType type { get; private set; }
 
         CustomWorkbook(FileInfo file)
@@ -34,7 +32,6 @@ namespace exporter
             ThreadPool.QueueUserWorkItem(o =>
             {
                 fileName = file.Name;
-                evaluate = evaluateBooks.Contains(fileName);
 
                 FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
@@ -64,9 +61,6 @@ namespace exporter
                             row.CreateCell(j).SetCellValue(values[j]);
                     }
                     evaluator = new XSSFFormulaEvaluator(workbook);
-                    //MemoryStream ms = new MemoryStream();
-                    //workbook.Write(ms);
-                    //File.WriteAllBytes(file.FullName + ".xlsx", ms.ToArray());
                 }
                 fs.Close();
 
@@ -85,10 +79,10 @@ namespace exporter
             int totalCount = 0;
 
             // 启用公式重算的接口
-            evaluateBooks = new List<string>();
+            evaluateSheets = new List<string>();
             string evaConfPath = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "evaconfig";
             if (File.Exists(evaConfPath))
-                evaluateBooks.AddRange(File.ReadAllLines(evaConfPath));
+                evaluateSheets = new List<string>(File.ReadAllLines(evaConfPath));
 
             // 遍历导出目录
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
@@ -97,10 +91,9 @@ namespace exporter
                     continue;
 
                 CustomWorkbook book = new CustomWorkbook(file);
-                book.type = file.Name.StartsWith("公式.") ? CustomWorkbookType.ExportFormal : CustomWorkbookType.ExportData;
+                book.type = CustomWorkbookType.Export;
                 totalCount++;
             }
-
 
             // 引用表
             string refConfPath = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "refconfig";

@@ -32,13 +32,13 @@ namespace exporter
                 if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
-                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float32 {//" + note);
+                sb.AppendLine("func (ins *" + sheet.SheetName.Substring(3) + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float32 {//" + note);
                 sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
                 sb.AppendLine("}");
 
                 if (canWrite)
                 {
-                    sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float32) {//" + note);
+                    sb.AppendLine("func (ins *" + sheet.SheetName.Substring(3) + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float32) {//" + note);
                     sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
@@ -51,19 +51,20 @@ namespace exporter
 
             StringBuilder sb = new StringBuilder();
             Dictionary<CellCoord, List<CellCoord>> abouts = new Dictionary<CellCoord, List<CellCoord>>();
-
+            string sheetName = sheet.SheetName.Substring(3);
+            string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
 
             sb.AppendLine("package config");
-            sb.AppendLine("type " + sheet.SheetName + "FormulaSheet struct {");
+            sb.AppendLine("type " + sheetName + "FormulaSheet struct {");
             sb.AppendLine("formulaSheet");
             sb.AppendLine("}");
 
-            sb.AppendLine("var " + sheet.SheetName + "FormaulaTemplate *formulaSheetTemplate");
+            sb.AppendLine("var " + sheetName + "FormaulaTemplate *formulaSheetTemplate");
             sb.AppendLine("func init() {");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate = new(formulaSheetTemplate)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas = make(map[int32]float32)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation = make(map[int32][]int32)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs = make(map[int32]func(*formulaSheet) float32)");
+            sb.AppendLine(sheetName + "FormaulaTemplate = new(formulaSheetTemplate)");
+            sb.AppendLine(sheetName + "FormaulaTemplate.datas = make(map[int32]float32)");
+            sb.AppendLine(sheetName + "FormaulaTemplate.relation = make(map[int32][]int32)");
+            sb.AppendLine(sheetName + "FormaulaTemplate.funcs = make(map[int32]func(*formulaSheet) float32)");
 
             // 数据内容
             for (int rownum = 0; rownum <= sheet.LastRowNum; rownum++)
@@ -83,12 +84,12 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
+                        sb.AppendLine(sheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
+                        sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
                         sb.AppendLine("return " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
@@ -129,13 +130,13 @@ namespace exporter
 
             // 数据影响关联
             foreach (var item in abouts)
-                sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "}");
+                sb.AppendLine(sheetName + "FormaulaTemplate.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "}");
             sb.AppendLine("}");
 
             // 创建
-            sb.AppendLine("func New" + sheet.SheetName.Substring(0, 1).ToUpper() + sheet.SheetName.Substring(1) + "Formula() *" + sheet.SheetName + "FormulaSheet {");
-            sb.AppendLine("formula:= new(" + sheet.SheetName + "FormulaSheet)");
-            sb.AppendLine("formula.template = " + sheet.SheetName + "FormaulaTemplate");
+            sb.AppendLine("func New" + SheetName + "Formula() *" + sheetName + "FormulaSheet {");
+            sb.AppendLine("formula:= new(" + sheetName + "FormulaSheet)");
+            sb.AppendLine("formula.template = " + sheetName + "FormaulaTemplate");
             sb.AppendLine("formula.datas = make(map[int32]float32)");
             sb.AppendLine("return formula");
             sb.AppendLine("}");
@@ -150,7 +151,7 @@ namespace exporter
             {
                 // 写结构
                 sb.AppendLine("type " + item.fullName + " struct {");
-                sb.AppendLine("sheet *" + sheet.SheetName + "FormulaSheet");
+                sb.AppendLine("sheet *" + sheetName + "FormulaSheet");
                 sb.AppendLine("line int32");
                 for (int i = 0; i < item.propertys.Count; i++)
                     sb.AppendLine(item.propertys[i] + " float32 // " + item.notes[i]);
@@ -178,7 +179,7 @@ namespace exporter
                 sb.AppendLine("");
 
                 // GetEnumerator
-                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
+                sb.AppendLine("func (ins *" + sheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
                 sb.AppendLine("enumerator := &" + item.fullName + "{}");
                 sb.AppendLine("enumerator.sheet = ins");
                 sb.AppendLine("return enumerator");
@@ -186,7 +187,7 @@ namespace exporter
             }
 
             // 结果
-            formulaContents.Add(sheet.SheetName.Substring(0, 1).ToUpper() + sheet.SheetName.Substring(1), sb.ToString());
+            formulaContents.Add(SheetName, sb.ToString());
             return string.Empty;
         }
 
@@ -206,6 +207,9 @@ namespace exporter
             typeconvert.Add("int", "int32");
             typeconvert.Add("string", "string");
             typeconvert.Add("double", "float32");
+            typeconvert.Add("[]int", "[]int32");
+            typeconvert.Add("[]string", "[]string");
+            typeconvert.Add("[]double", "[]float32");
 
             int goWriteCount = 0;
 
@@ -301,7 +305,7 @@ namespace exporter
 
                     for (int i = 0; i < data.keys.Count; i++)
                     {
-                        if (data.types[i] == "string")
+                        if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
                             continue;
                         sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float32) float32 {");
                         sb.AppendLine("return float32(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");

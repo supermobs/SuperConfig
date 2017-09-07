@@ -43,7 +43,7 @@ namespace exporter
                             dict.Add(arr[3], item);
                             item.start = i + 1;
                             item.name = arr[3].Substring(0, 1).ToUpper() + arr[3].Substring(1);
-                            item.fullName = sheet.SheetName.ToLower() + "_" + arr[3];
+                            item.fullName = sheet.SheetName.Substring(3).ToLower() + "_" + arr[3];
 
                             item.propertys = new List<string>();
                             item.notes = new List<string>();
@@ -79,7 +79,7 @@ namespace exporter
     {
         static Dictionary<string, string> formulaContents = new Dictionary<string, string>();
 
-        static List<string> dataTypes = new List<string>() { "int", "string", "double" };
+        static List<string> dataTypes = new List<string>() { "int", "string", "double", "[]int", "[]string", "[]double" };
         static Dictionary<string, DataStruct> datas = new Dictionary<string, DataStruct>();
         class DataStruct
         {
@@ -240,7 +240,7 @@ namespace exporter
                         try
                         {
                             object codevalue = null;
-                            if (book.evaluate && cell != null && cell.CellType == CellType.Formula)
+                            if (CustomWorkbook.evaluateSheets.Contains(sheet.SheetName) && cell != null && cell.CellType == CellType.Formula)
                             {
                                 book.evaluator.DebugEvaluationOutputForNextEval = true;
                                 CellValue cellValue = book.evaluator.Evaluate(cell);
@@ -248,28 +248,83 @@ namespace exporter
                                 {
                                     case "int":
                                         codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt32(cellValue.NumberValue) :
-                                            string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
+                                            cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
                                     case "string":
-                                        codevalue = string.IsNullOrEmpty(cellValue.StringValue) ? string.Empty : cellValue.StringValue; break;
+                                        codevalue = cellValue.CellType == CellType.String ? cellValue.StringValue : cellValue.ToString(); break;
                                     case "double":
                                         codevalue = cellValue.CellType == CellType.Numeric ? cellValue.NumberValue :
-                                            string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
+                                            cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
+                                    default:
+                                        if (data.types[j].StartsWith("[]"))
+                                        {
+                                            string[] arr = (cellValue.CellType == CellType.Numeric ? cellValue.NumberValue.ToString() : (cellValue.CellType == CellType.String ? cellValue.StringValue : "")).Split('|');
+                                            switch (data.types[j].Substring(2))
+                                            {
+                                                case "int":
+                                                    int[] v = new int[arr.Length];
+                                                    for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
+                                                    codevalue = v;
+                                                    break;
+                                                case "string":
+                                                    codevalue = arr;
+                                                    break;
+                                                case "double":
+                                                    double[] vv = new double[arr.Length];
+                                                    for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
+                                                    codevalue = vv;
+                                                    break;
+                                            }
+                                        }
+                                        break;
                                 }
                             }
                             else
                             {
+                                CellType ct = CellType.Blank;
+                                if (cell != null)
+                                {
+                                    if (cell.CellType == CellType.Formula)
+                                        ct = cell.CachedFormulaResultType;
+                                    else
+                                        ct = cell.CellType;
+                                }
+
                                 switch (data.types[j])
                                 {
                                     case "int":
-                                        int num;
-                                        codevalue = (cell == null || cell.CellType == CellType.Blank) ? 0 :
-                                            cell.CellType == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
-                                            int.TryParse(cell.StringCellValue, out num) ? num : 0;
+                                        codevalue = ct == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
+                                            (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? int.Parse(cell.StringCellValue) : 0);
                                         break;
                                     case "string":
-                                        codevalue = cell == null ? "" : cell.StringCellValue; break;
+                                        codevalue = ct == CellType.Numeric ? cell.NumericCellValue.ToString() :
+                                            (ct == CellType.String ? cell.StringCellValue : "");
+                                        break;
                                     case "double":
-                                        codevalue = cell == null ? 0 : cell.NumericCellValue; break;
+                                        codevalue = ct == CellType.Numeric ? cell.NumericCellValue :
+                                            (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? double.Parse(cell.StringCellValue) : 0);
+                                        break;
+                                    default:
+                                        if (data.types[j].StartsWith("[]"))
+                                        {
+                                            string[] arr = (ct == CellType.Numeric ? cell.NumericCellValue.ToString() : (ct == CellType.String ? cell.StringCellValue : "")).Split('|');
+                                            switch (data.types[j].Substring(2))
+                                            {
+                                                case "int":
+                                                    int[] v = new int[arr.Length];
+                                                    for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
+                                                    codevalue = v;
+                                                    break;
+                                                case "string":
+                                                    codevalue = arr;
+                                                    break;
+                                                case "double":
+                                                    double[] vv = new double[arr.Length];
+                                                    for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
+                                                    codevalue = vv;
+                                                    break;
+                                            }
+                                        }
+                                        break;
                                 }
                             }
                             values.Add(codevalue);
@@ -306,12 +361,14 @@ namespace exporter
 
             foreach (var book in CustomWorkbook.allBooks)
             {
-                if (book.type != CustomWorkbookType.ExportData)
+                if (book.type != CustomWorkbookType.Export)
                     continue;
 
                 for (int i = 0; i < book.workbook.NumberOfSheets; i++)
                 {
                     ISheet sheet = book.workbook.GetSheetAt(i);
+                    if (sheet.SheetName.StartsWith("(F)") || sheet.SheetName.StartsWith("_"))
+                        continue;
                     ThreadPool.QueueUserWorkItem(o =>
                     {
                         string error = DealWithDataSheet(sheet, book);
@@ -338,12 +395,15 @@ namespace exporter
 
             foreach (var book in CustomWorkbook.allBooks)
             {
-                if (book.type != CustomWorkbookType.ExportFormal)
+                if (book.type != CustomWorkbookType.Export)
                     continue;
 
                 for (int i = 0; i < book.workbook.NumberOfSheets; i++)
                 {
-                    string error = deal(book.workbook.GetSheetAt(i));
+                    ISheet sheet = book.workbook.GetSheetAt(i);
+                    if (!sheet.SheetName.StartsWith("(F)"))
+                        continue;
+                    string error = deal(sheet);
                     if (!string.IsNullOrEmpty(error))
                         return error;
                 }
