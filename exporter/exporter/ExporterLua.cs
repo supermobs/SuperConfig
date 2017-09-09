@@ -212,6 +212,7 @@ namespace exporter
                         }
                     }
 
+
                     File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
                         CodeTemplate.Get("template_data")
                         .Replace("[DATA_TABLE_NAME]", data.name)
@@ -229,8 +230,8 @@ namespace exporter
                         {
                             return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v =>
                             {
-                                if (v is string) return "[[" + v + "]]";
-                                if (v is string[]) return "{[[" + string.Join("]],[[", v as string[]) + "]]}";
+                                if (v is string) return ModifyLuaString(v as string);
+                                if (v is string[]) return "{" + string.Join(",", (v as string[]).Select(ModifyLuaString)) + "}";
                                 if (v is int[]) return "{" + string.Join(",", v as int[]) + "}";
                                 if (v is double[]) return "{" + string.Join(",", v as double[]) + "}";
                                 return v;
@@ -246,6 +247,14 @@ namespace exporter
             while (results.Count < datas.Values.Count)
                 Thread.Sleep(TimeSpan.FromSeconds(0.01));
             return string.Empty;
+        }
+
+        static string ModifyLuaString(string s)
+        {
+            string cs = "";
+            while (s.Contains(cs + "]"))
+                cs += "=";
+            return "[" + cs + "[" + s + "]" + cs + "]";
         }
     }
 }
