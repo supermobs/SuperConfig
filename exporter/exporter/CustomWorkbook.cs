@@ -38,7 +38,14 @@ namespace exporter
                 // 表的格式
                 if (file.Extension == ".xlsx")
                 {
-                    workbook = new XSSFWorkbook(fs);
+                    var book = new XSSFWorkbook(fs);
+                    foreach (var link in book.ExternalLinksTable)
+                    {
+                        string[] arr = link.LinkedFileName.Split('/');
+                        if (arr.Length > 1)
+                            link.LinkedFileName = arr[arr.Length - 1];
+                    }
+                    workbook = book;
                     evaluator = new XSSFFormulaEvaluator(workbook);
                 }
                 else if (file.Extension == ".xls")
