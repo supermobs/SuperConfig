@@ -60,7 +60,7 @@ namespace exporter
             sb.AppendLine("}");
 
             sb.AppendLine("var " + sheetName + "FormaulaTemplate *formulaSheetTemplate");
-            sb.AppendLine("func init() {");
+            sb.AppendLine("func loadFormula" + SheetName + "() {");
             sb.AppendLine(sheetName + "FormaulaTemplate = new(formulaSheetTemplate)");
             sb.AppendLine(sheetName + "FormaulaTemplate.datas = make(map[int32]float32)");
             sb.AppendLine(sheetName + "FormaulaTemplate.relation = make(map[int32][]int32)");
@@ -212,12 +212,14 @@ namespace exporter
             typeconvert.Add("[]double", "[]float32");
 
             int goWriteCount = 0;
+            List<string> loadfuncs = new List<string>();
 
             // 写公式
             foreach (var formula in formulaContents)
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
+                lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
             }
 
             List<string> results = new List<string>();
@@ -264,7 +266,8 @@ namespace exporter
                     sb.AppendLine("");
 
                     sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
-                    sb.AppendLine("func init(){");
+                    sb.AppendLine("func loadSheet" + bigname + "(){");
+                    lock (loadfuncs) loadfuncs.Add("loadSheet" + bigname);
                     sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
                     sb.AppendLine("if err != nil { log.Fatal(err) }");
                     sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
@@ -379,9 +382,27 @@ namespace exporter
                 });
             }
 
+
             // 格式化go代码
             while (goWriteCount < formulaContents.Count + datas.Values.Count)
                 Thread.Sleep(10);
+
+            // 写加载
+            StringBuilder loadcode = new StringBuilder();
+            loadcode.AppendLine("package config");
+            loadcode.AppendLine("import (");
+            loadcode.AppendLine("\"time\"");
+            loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
+            loadcode.AppendLine(")");
+            loadcode.AppendLine("func Load(){");
+            loadcode.AppendLine("start:= time.Now()");
+            foreach (var str in loadfuncs)
+                loadcode.AppendLine(str + "()");
+            loadcode.AppendLine("log.Release(\"config load success use % f s\", float64(time.Now().UnixNano()-start.UnixNano())/1e9)");
+            loadcode.AppendLine("}");
+            File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
+
+            // 格式化go代码
             ProcessStartInfo info = new ProcessStartInfo();
             info.FileName = "gofmt";
             info.WindowStyle = ProcessWindowStyle.Hidden;
@@ -393,6 +414,7 @@ namespace exporter
             // 等待所有文件完成
             while (results.Count < datas.Values.Count * 2)
                 Thread.Sleep(TimeSpan.FromSeconds(0.01));
+
             return string.Empty;
         }
     }
