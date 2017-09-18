@@ -241,8 +241,8 @@ namespace exporter
 
                     sb.AppendLine("type " + bigname + "Table struct {");
                     sb.AppendLine("Name string");
-                    sb.AppendLine("Datas map[int32]" + bigname + "Config");
-                    sb.AppendLine("Group " + bigname + "TableGroup");
+                    sb.AppendLine("Datas map[int32]*" + bigname + "Config");
+                    sb.AppendLine("Group *" + bigname + "TableGroup");
                     sb.AppendLine("}");
 
                     sb.AppendLine("type " + bigname + "TableGroup struct {");
@@ -283,7 +283,7 @@ namespace exporter
 
                     sb.AppendLine("func (ins *" + bigname + "Table) Get(id int32) *" + bigname + "Config {");
                     sb.AppendLine("data, ok:= ins.Datas[id]");
-                    sb.AppendLine("if ok { return &data }");
+                    sb.AppendLine("if ok { return data }");
                     sb.AppendLine("return nil");
                     sb.AppendLine("}");
 
@@ -294,15 +294,29 @@ namespace exporter
                         foreach (var t in g.Value)
                             sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + typeconvert[data.types[data.keys.IndexOf(t)]] + ",");
                         sb.Remove(sb.Length - 1, 1);
-                        sb.AppendLine(") *" + bigname + "Config {");
+                        sb.AppendLine(") []*" + bigname + "Config {");
 
-                        sb.Append("ids:= ins.Group." + g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
-                        foreach (var t in g.Value)
-                            sb.Append("[" + t.Substring(0, 1).ToUpper() + t.Substring(1) + "]");
-                        sb.AppendLine();
+                        for (int i = 0; i < g.Value.Length; i++)
+                        {
+                            sb.Append("if tmp" + i + ", ok:= ");
+                            if (i == 0)
+                                sb.Append("ins.Group." + g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
+                            else
+                                sb.Append("tmp" + (i - 1));
+                            sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) + "]; ok {");
+                        }
 
-                        sb.AppendLine("if len(ids) != 1 { return nil }");
-                        sb.AppendLine("return ins.Get(ids[0]) }");
+
+                        sb.AppendLine("ids:= tmp" + (g.Value.Length - 1));
+                        sb.AppendLine("configs := make([]*" + bigname + "Config, len(ids))");
+                        sb.AppendLine("for i, id := range ids {");
+                        sb.AppendLine("configs[i] = ins.Get(id)");
+                        sb.AppendLine("}");
+                        sb.AppendLine("return configs");
+
+                        for (int i = 0; i < g.Value.Length; i++)
+                            sb.AppendLine("}");
+                        sb.AppendLine("return make([]*" + bigname + "Config, 0) }");
                     }
 
 
@@ -388,6 +402,7 @@ namespace exporter
                 Thread.Sleep(10);
 
             // 写加载
+            loadfuncs.Sort();
             StringBuilder loadcode = new StringBuilder();
             loadcode.AppendLine("package config");
             loadcode.AppendLine("import (");

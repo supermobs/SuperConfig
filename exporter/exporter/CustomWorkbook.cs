@@ -43,7 +43,12 @@ namespace exporter
                     {
                         string[] arr = link.LinkedFileName.Split('/');
                         if (arr.Length > 1)
+                        {
                             link.LinkedFileName = arr[arr.Length - 1];
+                            fs.Close();
+                            fs = new FileStream(file.FullName, FileMode.Create);
+                            book.Write(fs);
+                        }
                     }
                     workbook = book;
                     evaluator = new XSSFFormulaEvaluator(workbook);
