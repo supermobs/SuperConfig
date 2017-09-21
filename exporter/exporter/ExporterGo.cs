@@ -260,7 +260,7 @@ namespace exporter
                     sb.AppendLine("type " + bigname + "Config struct {");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
-                        sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " + typeconvert[data.types[i]] + " " + "\"" + data.keyNames[i] + "\"");
+                        sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " + typeconvert[data.types[i]] + " " + "// " + data.keyNames[i]);
                     }
                     sb.AppendLine("}");
                     sb.AppendLine("");
@@ -269,10 +269,10 @@ namespace exporter
                     sb.AppendLine("func loadSheet" + bigname + "(){");
                     lock (loadfuncs) loadfuncs.Add("loadSheet" + bigname);
                     sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
-                    sb.AppendLine("if err != nil { log.Fatal(err) }");
+                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
                     sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
                     sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
-                    sb.AppendLine("if err != nil { log.Fatal(err) }");
+                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
