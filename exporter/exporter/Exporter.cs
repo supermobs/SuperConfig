@@ -86,6 +86,7 @@ namespace exporter
             public readonly string name;
             public bool isnew = true;
             public List<string> files = new List<string>();
+            public int autoid = 99000000;
 
             public DataStruct(string name)
             {
@@ -136,6 +137,7 @@ namespace exporter
                 //5、sheet第二行，字段英文名，不填写留空的列将被过滤掉，不予导出，第一列不可留空
                 //6、sheet第三行，字段中文名
                 //7、sheet第四行，字段类型，int整数、string字符串、double浮点数
+                try
                 {
                     IRow engRow = sheet.GetRow(1);
                     IRow cnRow = sheet.GetRow(2);
@@ -153,7 +155,9 @@ namespace exporter
                         if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String || string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
                             continue;
                         cols.Add(i);
-                        keys.Add(engRow.GetCell(i).StringCellValue);
+                        string key = engRow.GetCell(i).StringCellValue;
+                        if (keys.Contains(key)) return "字段名重复 " + key + "，SheetName = " + tableName + "，FileName = " + book.fileName;
+                        keys.Add(key);
                         keyNames.Add((cnRow == null || cnRow.GetCell(i) == null) ? "" : cnRow.GetCell(i).StringCellValue.Replace("\n", " "));
                         string type = (tRow == null || tRow.GetCell(i) == null) ? " " : tRow.GetCell(i).StringCellValue;
                         types.Add(type);
@@ -179,6 +183,10 @@ namespace exporter
                         Compare(types, data.types, error);
                         Compare(cols, data.cols, error);
                     }
+                }
+                catch (Exception ex)
+                {
+                    return "表头错误，SheetName = " + tableName + "，FileName = " + book.fileName + "\n" + ex.ToString() + "\n" + ex.StackTrace;
                 }
 
                 // 读取表头
@@ -339,6 +347,11 @@ namespace exporter
                     int id = (int)values[0];
                     if (id == 0) // id=0忽略，方便公式生成id
                         continue;
+                    if (id == -1)
+                    {
+                        id = ++data.autoid;
+                        values[0] = id;
+                    }
                     if (ids.Contains(id))
                         return "索引冲突 [" + values[0] + "]，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
                     // 添加id
@@ -371,7 +384,15 @@ namespace exporter
                         continue;
                     ThreadPool.QueueUserWorkItem(o =>
                     {
-                        string error = DealWithDataSheet(sheet, book);
+                        string error;
+                        try
+                        {
+                            error = DealWithDataSheet(sheet, book);
+                        }
+                        catch (Exception ex)
+                        {
+                            error = ex.ToString();
+                        }
                         lock (results)
                             results.Add(error);
                     });
