@@ -210,6 +210,11 @@ namespace exporter
             typeconvert.Add("[]int", "[]int32");
             typeconvert.Add("[]string", "[]string");
             typeconvert.Add("[]double", "[]float32");
+            // 索引类型转换
+            Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
+            mapTypeConvert.Add("int32", "int32");
+            mapTypeConvert.Add("string", "string");
+            mapTypeConvert.Add("float32", "string");
 
             int goWriteCount = 0;
             List<string> loadfuncs = new List<string>();
@@ -239,6 +244,7 @@ namespace exporter
                     sb.AppendLine("\"log\"");
                     sb.AppendLine(")");
 
+                    sb.AppendLine("// " + string.Join(",", data.files));
                     sb.AppendLine("type " + bigname + "Table struct {");
                     sb.AppendLine("Name string");
                     sb.AppendLine("Datas map[int32]*" + bigname + "Config");
@@ -251,7 +257,7 @@ namespace exporter
                         sb.Append(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
                         sb.Append(" ");
                         foreach (var t in g.Value)
-                            sb.Append("map[" + typeconvert[data.types[data.keys.IndexOf(t)]] + "]");
+                            sb.Append("map[" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + "]");
                         sb.AppendLine("[]int32");
                     }
                     sb.AppendLine("}");
@@ -292,7 +298,7 @@ namespace exporter
                         sb.AppendLine("");
                         sb.Append("func(ins * " + bigname + "Table) Get_" + g.Key.Replace("|", "_") + "(");
                         foreach (var t in g.Value)
-                            sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + typeconvert[data.types[data.keys.IndexOf(t)]] + ",");
+                            sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
                         sb.Remove(sb.Length - 1, 1);
                         sb.AppendLine(") []*" + bigname + "Config {");
 

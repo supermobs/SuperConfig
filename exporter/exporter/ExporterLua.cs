@@ -215,6 +215,7 @@ namespace exporter
 
                     File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
                         CodeTemplate.Get("template_data")
+                        .Replace("[EXCEL_FILES]", string.Join(",", data.files))
                         .Replace("[DATA_TABLE_NAME]", data.name)
                         .Replace("[DATA_KEYS]", string.Join(",\n", data.keys.Select(engname => { return "\"" + engname + "\"--[[" + data.keyNames[data.keys.IndexOf(engname)] + "]]"; })))
                         .Replace("[DATA_COLS]", string.Join("\n", data.cols.Select(i => { return "data.cols[" + (i + 1) + "] = " + (data.cols.IndexOf(i) + 1); })))
