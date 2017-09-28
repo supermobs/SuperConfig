@@ -20,10 +20,10 @@ namespace exporter
                     continue;
                 ICell cell1 = row.GetCell(col, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 ICell cell2 = row.GetCell(col + 1, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                if (cell1 == null || cell2 == null)
+                if (cell1 == null || cell2 == null || cell1.CellType == CellType.Blank || cell2.CellType == CellType.Blank)
                     continue;
                 if (cell1.CellType != CellType.String || cell2.CellType != CellType.String)
-                    throw new System.Exception("检查输入第" + (i + 1) + "行");
+                    throw new System.Exception("检查输入第" + (i + 1) + "行，sheetname=" + sheet.SheetName);
                 string note = cell1.StringCellValue;
                 string name = cell2.StringCellValue;
                 if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
