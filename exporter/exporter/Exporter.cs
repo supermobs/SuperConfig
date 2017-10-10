@@ -266,6 +266,7 @@ namespace exporter
                                         if (data.types[j].StartsWith("[]"))
                                         {
                                             string[] arr = (cellValue.CellType == CellType.Numeric ? cellValue.NumberValue.ToString() : (cellValue.CellType == CellType.String ? cellValue.StringValue : "")).Split('|');
+                                            if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
                                             switch (data.types[j].Substring(2))
                                             {
                                                 case "int":
@@ -315,6 +316,7 @@ namespace exporter
                                         if (data.types[j].StartsWith("[]"))
                                         {
                                             string[] arr = (ct == CellType.Numeric ? cell.NumericCellValue.ToString() : (ct == CellType.String ? cell.StringCellValue : "")).Split('|');
+                                            if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
                                             switch (data.types[j].Substring(2))
                                             {
                                                 case "int":

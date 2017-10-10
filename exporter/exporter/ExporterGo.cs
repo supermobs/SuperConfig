@@ -32,13 +32,15 @@ namespace exporter
                 if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
-                sb.AppendLine("func (ins *" + sheet.SheetName.Substring(3) + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float32 {//" + note);
+                string sheetName = sheet.SheetName.Substring(3);
+                string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
+                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float32 {//" + note);
                 sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
                 sb.AppendLine("}");
 
                 if (canWrite)
                 {
-                    sb.AppendLine("func (ins *" + sheet.SheetName.Substring(3) + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float32) {//" + note);
+                    sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float32) {//" + note);
                     sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
@@ -55,7 +57,7 @@ namespace exporter
             string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
 
             sb.AppendLine("package config");
-            sb.AppendLine("type " + sheetName + "FormulaSheet struct {");
+            sb.AppendLine("type " + SheetName + "FormulaSheet struct {");
             sb.AppendLine("formulaSheet");
             sb.AppendLine("}");
 
@@ -134,8 +136,8 @@ namespace exporter
             sb.AppendLine("}");
 
             // 创建
-            sb.AppendLine("func New" + SheetName + "Formula() *" + sheetName + "FormulaSheet {");
-            sb.AppendLine("formula:= new(" + sheetName + "FormulaSheet)");
+            sb.AppendLine("func New" + SheetName + "Formula() *" + SheetName + "FormulaSheet {");
+            sb.AppendLine("formula:= new(" + SheetName + "FormulaSheet)");
             sb.AppendLine("formula.template = " + sheetName + "FormaulaTemplate");
             sb.AppendLine("formula.datas = make(map[int32]float32)");
             sb.AppendLine("return formula");
@@ -151,7 +153,7 @@ namespace exporter
             {
                 // 写结构
                 sb.AppendLine("type " + item.fullName + " struct {");
-                sb.AppendLine("sheet *" + sheetName + "FormulaSheet");
+                sb.AppendLine("sheet *" + SheetName + "FormulaSheet");
                 sb.AppendLine("line int32");
                 for (int i = 0; i < item.propertys.Count; i++)
                     sb.AppendLine(item.propertys[i] + " float32 // " + item.notes[i]);
@@ -179,7 +181,7 @@ namespace exporter
                 sb.AppendLine("");
 
                 // GetEnumerator
-                sb.AppendLine("func (ins *" + sheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
+                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
                 sb.AppendLine("enumerator := &" + item.fullName + "{}");
                 sb.AppendLine("enumerator.sheet = ins");
                 sb.AppendLine("return enumerator");
