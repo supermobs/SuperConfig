@@ -66,6 +66,7 @@ namespace exporter
         const char CHAR_VALUE_Z = 'Z';
         static void GetCoordinate(string cell, out int row, out int col)
         {
+            cell = cell.Replace("$", "");
             col = 0;
             row = 0;
             for (int i = 0; i < cell.Length; i++)

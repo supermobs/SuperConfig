@@ -1,11 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NPOI.SS.UserModel;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace exporter
 {
@@ -21,23 +23,25 @@ namespace exporter
                     continue;
                 ICell cell1 = row.GetCell(col, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 ICell cell2 = row.GetCell(col + 1, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                if (cell1 == null || cell2 == null)
+                if (cell1 == null || cell2 == null || cell1.CellType == CellType.Blank || cell2.CellType == CellType.Blank)
                     continue;
                 if (cell1.CellType != CellType.String || cell2.CellType != CellType.String)
-                    throw new System.Exception("检查输入第" + (i + 1) + "行");
+                    throw new System.Exception("检查输入第" + (i + 1) + "行，sheetname=" + sheet.SheetName);
                 string note = cell1.StringCellValue;
                 string name = cell2.StringCellValue;
-                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
-                sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float64 {//" + note);
-                sb.AppendLine("return ins.get(" + ((i + 1) * 100 + col + 3) + ")");
+                string sheetName = sheet.SheetName.Substring(3);
+                string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
+                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float32 {//" + note);
+                sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
                 sb.AppendLine("}");
 
                 if (canWrite)
                 {
-                    sb.AppendLine("func (ins *" + sheet.SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float64) {//" + note);
-                    sb.AppendLine("ins.set(" + ((i + 1) * 100 + col + 3) + ",v)");
+                    sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float32) {//" + note);
+                    sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
             }
@@ -49,19 +53,20 @@ namespace exporter
 
             StringBuilder sb = new StringBuilder();
             Dictionary<CellCoord, List<CellCoord>> abouts = new Dictionary<CellCoord, List<CellCoord>>();
+            string sheetName = sheet.SheetName.Substring(3);
+            string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
 
-
-            sb.AppendLine("package conf");
-            sb.AppendLine("type " + sheet.SheetName + "FormulaSheet struct {");
+            sb.AppendLine("package config");
+            sb.AppendLine("type " + SheetName + "FormulaSheet struct {");
             sb.AppendLine("formulaSheet");
             sb.AppendLine("}");
 
-            sb.AppendLine("var " + sheet.SheetName + "FormaulaTemplate *formulaSheetTemplate");
-            sb.AppendLine("func init() {");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate = new(formulaSheetTemplate)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas = make(map[int32]float64)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation = make(map[int32][]int32)");
-            sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs = make(map[int32]func(*formulaSheet) float64)");
+            sb.AppendLine("var " + sheetName + "FormaulaTemplate *formulaSheetTemplate");
+            sb.AppendLine("func loadFormula" + SheetName + "() {");
+            sb.AppendLine(sheetName + "FormaulaTemplate = new(formulaSheetTemplate)");
+            sb.AppendLine(sheetName + "FormaulaTemplate.datas = make(map[int32]float32)");
+            sb.AppendLine(sheetName + "FormaulaTemplate.relation = make(map[int32][]int32)");
+            sb.AppendLine(sheetName + "FormaulaTemplate.funcs = make(map[int32]func(*formulaSheet) float32)");
 
             // 数据内容
             for (int rownum = 0; rownum <= sheet.LastRowNum; rownum++)
@@ -81,12 +86,12 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 100 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
+                        sb.AppendLine(sheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.AppendLine(sheet.SheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 100 + colnum + 1) + "] = func(ins *formulaSheet) float64 {");
+                        sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
                         sb.AppendLine("return " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
@@ -127,14 +132,14 @@ namespace exporter
 
             // 数据影响关联
             foreach (var item in abouts)
-                sb.AppendLine(sheet.SheetName + "FormaulaTemplate.relation[" + (item.Key.row * 100 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 100 + c.col; })) + "}");
+                sb.AppendLine(sheetName + "FormaulaTemplate.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "}");
             sb.AppendLine("}");
 
             // 创建
-            sb.AppendLine("func New" + sheet.SheetName.Substring(0, 1).ToUpper() + sheet.SheetName.Substring(1) + "Formula() *" + sheet.SheetName + "FormulaSheet {");
-            sb.AppendLine("formula:= new(" + sheet.SheetName + "FormulaSheet)");
-            sb.AppendLine("formula.template = " + sheet.SheetName + "FormaulaTemplate");
-            sb.AppendLine("formula.datas = make(map[int32]float64)");
+            sb.AppendLine("func New" + SheetName + "Formula() *" + SheetName + "FormulaSheet {");
+            sb.AppendLine("formula:= new(" + SheetName + "FormulaSheet)");
+            sb.AppendLine("formula.template = " + sheetName + "FormaulaTemplate");
+            sb.AppendLine("formula.datas = make(map[int32]float32)");
             sb.AppendLine("return formula");
             sb.AppendLine("}");
 
@@ -143,186 +148,296 @@ namespace exporter
             AppendGoDeclara(sheet, 0, true, sb);
             AppendGoDeclara(sheet, 3, false, sb);
 
+            // 枚举器
+            foreach (var item in FormulaEnumerator.GetList(sheet))
+            {
+                // 写结构
+                sb.AppendLine("type " + item.fullName + " struct {");
+                sb.AppendLine("sheet *" + SheetName + "FormulaSheet");
+                sb.AppendLine("line int32");
+                for (int i = 0; i < item.propertys.Count; i++)
+                    sb.AppendLine(item.propertys[i] + " float32 // " + item.notes[i]);
+                sb.AppendLine("}");
+
+                // MoveNext
+                sb.AppendLine("func (ins *" + item.fullName + ") MoveNext() bool {");
+                sb.AppendLine("if ins.line <= 0 {");
+                sb.AppendLine("ins.line = " + (item.start + 1) * 1000);
+                sb.AppendLine("} else {");
+                sb.AppendLine("ins.line = ins.line + " + item.div * 1000);
+                sb.AppendLine("}");
+                sb.AppendLine("if ins.line >= " + (item.end + 1) * 1000 + " {");
+                sb.AppendLine("return false");
+                sb.AppendLine("}");
+                sb.AppendLine("");
+                sb.AppendLine("if ins.sheet.get(ins.line+" + (6 + 1000 * (item.key - 1)) + ") == 0 {");
+                sb.AppendLine("return ins.MoveNext()");
+                sb.AppendLine("}");
+                sb.AppendLine("");
+                for (int i = 0; i < item.propertys.Count; i++)
+                    sb.AppendLine("ins." + item.propertys[i] + " = ins.sheet.get(ins.line+" + (6 + 1000 * i) + ")");
+                sb.AppendLine("return true");
+                sb.AppendLine("}");
+                sb.AppendLine("");
+
+                // GetEnumerator
+                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
+                sb.AppendLine("enumerator := &" + item.fullName + "{}");
+                sb.AppendLine("enumerator.sheet = ins");
+                sb.AppendLine("return enumerator");
+                sb.AppendLine("}");
+            }
+
             // 结果
-            formulaContents.Add(sheet.SheetName.Substring(0, 1).ToUpper() + sheet.SheetName.Substring(1), sb.ToString());
+            formulaContents.Add(SheetName, sb.ToString());
             return string.Empty;
         }
 
         public static string ExportGo(string codeExportDir, string configExportDir)
         {
             // 目录清理
-            if (Directory.Exists(configExportDir)) Directory.Delete(configExportDir, true);
-            Directory.CreateDirectory(configExportDir);
+            if (Directory.Exists(configExportDir))
+                new DirectoryInfo(configExportDir).GetFiles().ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            else
+                Directory.CreateDirectory(configExportDir);
             if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
-            new DirectoryInfo(codeExportDir).GetFiles("*Export.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
 
             // 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
             typeconvert.Add("int", "int32");
             typeconvert.Add("string", "string");
-            typeconvert.Add("double", "float64");
+            typeconvert.Add("double", "float32");
+            typeconvert.Add("[]int", "[]int32");
+            typeconvert.Add("[]string", "[]string");
+            typeconvert.Add("[]double", "[]float32");
+            // 索引类型转换
+            Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
+            mapTypeConvert.Add("int32", "int32");
+            mapTypeConvert.Add("string", "string");
+            mapTypeConvert.Add("float32", "string");
 
-            ProcessStartInfo info = new ProcessStartInfo();
-            info.FileName = "gofmt";
-            info.WindowStyle = ProcessWindowStyle.Hidden;
-            info.UseShellExecute = true;
-            info.ErrorDialog = true;
+            int goWriteCount = 0;
+            List<string> loadfuncs = new List<string>();
 
             // 写公式
             foreach (var formula in formulaContents)
             {
-                File.WriteAllText(codeExportDir + formula.Key + "FormulaExport.go", formula.Value, new UTF8Encoding(false));
-                info.Arguments = " -w " + codeExportDir + formula.Key + "FormulaExport.go";
-                Process.Start(info).WaitForExit();
+                File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
+                Interlocked.Increment(ref goWriteCount);
+                lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
             }
+
+            List<string> results = new List<string>();
 
             // 写go
             foreach (var data in datas.Values)
             {
-                string bigname = data.name.Substring(0, 1).ToUpper() + data.name.Substring(1);
-
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("package conf");
-                sb.AppendLine("import (");
-                sb.AppendLine("\"encoding/json\"");
-                sb.AppendLine("\"io/ioutil\"");
-                sb.AppendLine("\"log\"");
-                sb.AppendLine(")");
-
-                sb.AppendLine("type " + bigname + "Table struct {");
-                sb.AppendLine("Name string");
-                sb.AppendLine("Datas map[int32]" + bigname + "Config");
-                sb.AppendLine("Group " + bigname + "TableGroup");
-                sb.AppendLine("}");
-
-                sb.AppendLine("type " + bigname + "TableGroup struct {");
-                foreach (var g in data.groups)
+                ThreadPool.QueueUserWorkItem(ooo =>
                 {
-                    sb.Append(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
-                    sb.Append(" ");
-                    foreach (var t in g.Value)
-                        sb.Append("map[" + typeconvert[data.types[data.keys.IndexOf(t)]] + "]");
-                    sb.AppendLine("[]int32");
-                }
-                sb.AppendLine("}");
-                sb.AppendLine("");
+                    string bigname = data.name.Substring(0, 1).ToUpper() + data.name.Substring(1);
 
-                sb.AppendLine("type " + bigname + "Config struct {");
-                for (int i = 0; i < data.keys.Count; i++)
-                {
-                    sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " + typeconvert[data.types[i]] + " " + "\"" + data.keyNames[i] + "\"");
-                }
-                sb.AppendLine("}");
-                sb.AppendLine("");
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine("package config");
+                    sb.AppendLine("import (");
+                    sb.AppendLine("\"encoding/json\"");
+                    sb.AppendLine("\"io/ioutil\"");
+                    sb.AppendLine("\"log\"");
+                    sb.AppendLine(")");
 
-                sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
-                sb.AppendLine("func init(){");
-                sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"config/" + data.name + ".json\")");
-                sb.AppendLine("if err != nil { log.Fatal(err) }");
-                sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
-                sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
-                sb.AppendLine("if err != nil { log.Fatal(err) }");
-                sb.AppendLine("}");
-                sb.AppendLine("");
-
-                sb.AppendLine("func Get" + bigname + "Table() *" + bigname + "Table {");
-                sb.AppendLine("return _" + bigname + "Ins");
-                sb.AppendLine("}");
-                sb.AppendLine("");
-
-                sb.AppendLine("func (ins *" + bigname + "Table) Get(id int32) *" + bigname + "Config {");
-                sb.AppendLine("data, ok:= ins.Datas[id]");
-                sb.AppendLine("if ok { return &data }");
-                sb.AppendLine("return nil");
-                sb.AppendLine("}");
-
-                foreach (var g in data.groups)
-                {
-                    sb.AppendLine("");
-                    sb.Append("func(ins * " + bigname + "Table) Get_" + g.Key.Replace("|", "_") + "(");
-                    foreach (var t in g.Value)
-                        sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + typeconvert[data.types[data.keys.IndexOf(t)]] + ",");
-                    sb.Remove(sb.Length - 1, 1);
-                    sb.AppendLine(") *" + bigname + "Config {");
-
-                    sb.Append("ids:= ins.Group." + g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
-                    foreach (var t in g.Value)
-                        sb.Append("[" + t.Substring(0, 1).ToUpper() + t.Substring(1) + "]");
-                    sb.AppendLine();
-
-                    sb.AppendLine("if len(ids) != 1 { return nil }");
-                    sb.AppendLine("return ins.Get(ids[0]) }");
-                }
-
-
-                for (int i = 0; i < data.keys.Count; i++)
-                {
-                    if (data.types[i] == "string")
-                        continue;
-                    sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float64) float64 {");
-                    sb.AppendLine("return float64(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
+                    sb.AppendLine("// " + string.Join(",", data.files));
+                    sb.AppendLine("type " + bigname + "Table struct {");
+                    sb.AppendLine("Name string");
+                    sb.AppendLine("Datas map[int32]*" + bigname + "Config");
+                    sb.AppendLine("Group *" + bigname + "TableGroup");
                     sb.AppendLine("}");
-                }
 
-                File.WriteAllText(codeExportDir + bigname + "Export.go", sb.ToString());
-                info.Arguments = " -w " + codeExportDir + bigname + "Export.go";
-                Process.Start(info).WaitForExit();
+                    sb.AppendLine("type " + bigname + "TableGroup struct {");
+                    foreach (var g in data.groups)
+                    {
+                        sb.Append(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
+                        sb.Append(" ");
+                        foreach (var t in g.Value)
+                            sb.Append("map[" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + "]");
+                        sb.AppendLine("[]int32");
+                    }
+                    sb.AppendLine("}");
+                    sb.AppendLine("");
+
+                    sb.AppendLine("type " + bigname + "Config struct {");
+                    for (int i = 0; i < data.keys.Count; i++)
+                    {
+                        sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " + typeconvert[data.types[i]] + " " + "// " + data.keyNames[i]);
+                    }
+                    sb.AppendLine("}");
+                    sb.AppendLine("");
+
+                    sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
+                    sb.AppendLine("func loadSheet" + bigname + "(){");
+                    lock (loadfuncs) loadfuncs.Add("loadSheet" + bigname);
+                    sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
+                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
+                    sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
+                    sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
+                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
+
+                    sb.AppendLine("}");
+                    sb.AppendLine("");
+
+                    sb.AppendLine("func Get" + bigname + "Table() *" + bigname + "Table {");
+                    sb.AppendLine("return _" + bigname + "Ins");
+                    sb.AppendLine("}");
+                    sb.AppendLine("");
+
+                    sb.AppendLine("func (ins *" + bigname + "Table) Get(id int32) *" + bigname + "Config {");
+                    sb.AppendLine("data, ok:= ins.Datas[id]");
+                    sb.AppendLine("if ok { return data }");
+                    sb.AppendLine("return nil");
+                    sb.AppendLine("}");
+
+                    foreach (var g in data.groups)
+                    {
+                        sb.AppendLine("");
+                        sb.Append("func(ins * " + bigname + "Table) Get_" + g.Key.Replace("|", "_") + "(");
+                        foreach (var t in g.Value)
+                            sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
+                        sb.Remove(sb.Length - 1, 1);
+                        sb.AppendLine(") []*" + bigname + "Config {");
+
+                        for (int i = 0; i < g.Value.Length; i++)
+                        {
+                            sb.Append("if tmp" + i + ", ok:= ");
+                            if (i == 0)
+                                sb.Append("ins.Group." + g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
+                            else
+                                sb.Append("tmp" + (i - 1));
+                            sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) + "]; ok {");
+                        }
+
+
+                        sb.AppendLine("ids:= tmp" + (g.Value.Length - 1));
+                        sb.AppendLine("configs := make([]*" + bigname + "Config, len(ids))");
+                        sb.AppendLine("for i, id := range ids {");
+                        sb.AppendLine("configs[i] = ins.Get(id)");
+                        sb.AppendLine("}");
+                        sb.AppendLine("return configs");
+
+                        for (int i = 0; i < g.Value.Length; i++)
+                            sb.AppendLine("}");
+                        sb.AppendLine("return make([]*" + bigname + "Config, 0) }");
+                    }
+
+
+                    for (int i = 0; i < data.keys.Count; i++)
+                    {
+                        if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
+                            continue;
+                        sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float32) float32 {");
+                        sb.AppendLine("return float32(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
+                        sb.AppendLine("}");
+                    }
+
+                    File.WriteAllText(codeExportDir + "data_" + data.name + ".go", sb.ToString());
+                    Interlocked.Increment(ref goWriteCount);
+
+                    lock (results)
+                        results.Add(string.Empty);
+                });
             }
-
-
 
             // 写json
             foreach (var data in datas.Values)
             {
-                JObject config = new JObject();
-                config["Name"] = data.name;
-
-                JObject datas = new JObject();
-                config["Datas"] = datas;
-                foreach (var line in data.dataContent)
+                ThreadPool.QueueUserWorkItem(ooo =>
                 {
-                    JObject ll = new JObject();
-                    for (int j = 0; j < data.keys.Count; j++)
-                        ll[data.keys[j]] = JToken.FromObject(line[j]);
-                    datas[line[0].ToString()] = ll;
-                }
+                    JObject config = new JObject();
+                    config["Name"] = data.name;
 
-                JObject group = new JObject();
-                config["Group"] = group;
-                Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
-                while (enumerator.MoveNext())
-                    group[enumerator.Current.Key.Replace("|", "_")] = new JObject();
-                foreach (var values in data.dataContent)
-                {
-                    enumerator = data.groups.GetEnumerator();
-                    while (enumerator.MoveNext())
+                    JObject datas = new JObject();
+                    config["Datas"] = datas;
+                    foreach (var line in data.dataContent)
                     {
-                        JObject cur = group[enumerator.Current.Key.Replace("|", "_")] as JObject;
-                        string key = string.Empty;
-                        for (int j = 0; j < enumerator.Current.Value.Length - 1; j++)
-                        {
-                            key = values[data.groupindexs[enumerator.Current.Key][j]].ToString();
-                            if (cur[key] == null)
-                                cur[key] = new JObject();
-                            cur = cur[key] as JObject;
-                        }
-                        key = values[data.groupindexs[enumerator.Current.Key][enumerator.Current.Value.Length - 1]].ToString();
-                        if (cur[key] == null)
-                            cur[key] = new JArray();
-                        (cur[key] as JArray).Add(JToken.FromObject(values[0]));
+                        JObject ll = new JObject();
+                        for (int j = 0; j < data.keys.Count; j++)
+                            ll[data.keys[j]] = JToken.FromObject(line[j]);
+                        datas[line[0].ToString()] = ll;
                     }
-                }
 
-                StringWriter textWriter = new StringWriter();
-                JsonTextWriter jsonWriter = new JsonTextWriter(textWriter)
-                {
-                    Formatting = Formatting.Indented,
-                    Indentation = 4,
-                    IndentChar = ' '
-                };
-                new JsonSerializer().Serialize(jsonWriter, config);
-                File.WriteAllText(configExportDir + data.name + ".json", textWriter.ToString());
+                    JObject group = new JObject();
+                    config["Group"] = group;
+                    Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
+                    while (enumerator.MoveNext())
+                        group[enumerator.Current.Key.Replace("|", "_")] = new JObject();
+                    foreach (var values in data.dataContent)
+                    {
+                        enumerator = data.groups.GetEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            JObject cur = group[enumerator.Current.Key.Replace("|", "_")] as JObject;
+                            string key = string.Empty;
+                            for (int j = 0; j < enumerator.Current.Value.Length - 1; j++)
+                            {
+                                key = values[data.groupindexs[enumerator.Current.Key][j]].ToString();
+                                if (cur[key] == null)
+                                    cur[key] = new JObject();
+                                cur = cur[key] as JObject;
+                            }
+                            key = values[data.groupindexs[enumerator.Current.Key][enumerator.Current.Value.Length - 1]].ToString();
+                            if (cur[key] == null)
+                                cur[key] = new JArray();
+                            (cur[key] as JArray).Add(JToken.FromObject(values[0]));
+                        }
+                    }
+
+                    StringWriter textWriter = new StringWriter();
+                    JsonTextWriter jsonWriter = new JsonTextWriter(textWriter)
+                    {
+                        Formatting = Formatting.Indented,
+                        Indentation = 4,
+                        IndentChar = ' '
+                    };
+                    new JsonSerializer().Serialize(jsonWriter, config);
+                    File.WriteAllText(configExportDir + data.name + ".json", textWriter.ToString());
+
+                    lock (results)
+                        results.Add(string.Empty);
+                });
             }
+
+
+            // 格式化go代码
+            while (goWriteCount < formulaContents.Count + datas.Values.Count)
+                Thread.Sleep(10);
+
+            // 写加载
+            loadfuncs.Sort();
+            StringBuilder loadcode = new StringBuilder();
+            loadcode.AppendLine("package config");
+            loadcode.AppendLine("import (");
+            loadcode.AppendLine("\"time\"");
+            loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
+            loadcode.AppendLine(")");
+            loadcode.AppendLine("func Load(){");
+            loadcode.AppendLine("start:= time.Now()");
+            foreach (var str in loadfuncs)
+                loadcode.AppendLine(str + "()");
+            loadcode.AppendLine("log.Release(\"config load success use % f s\", float64(time.Now().UnixNano()-start.UnixNano())/1e9)");
+            loadcode.AppendLine("}");
+            File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
+
+            // 格式化go代码
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.FileName = "gofmt";
+            info.WindowStyle = ProcessWindowStyle.Hidden;
+            info.UseShellExecute = true;
+            info.ErrorDialog = false;
+            info.Arguments = "-w " + codeExportDir;
+            Process.Start(info).WaitForExit();
+
+            // 等待所有文件完成
+            while (results.Count < datas.Values.Count * 2)
+                Thread.Sleep(TimeSpan.FromSeconds(0.01));
 
             return string.Empty;
         }

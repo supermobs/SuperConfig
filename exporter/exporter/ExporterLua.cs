@@ -1,8 +1,10 @@
 ﻿using NPOI.SS.UserModel;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace exporter
 {
@@ -18,13 +20,13 @@ namespace exporter
                     continue;
                 ICell cell1 = row.GetCell(col, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 ICell cell2 = row.GetCell(col + 1, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                if (cell1 == null || cell2 == null)
+                if (cell1 == null || cell2 == null || cell1.CellType == CellType.Blank || cell2.CellType == CellType.Blank)
                     continue;
                 if (cell1.CellType != CellType.String || cell2.CellType != CellType.String)
-                    throw new System.Exception("检查输入第" + (i + 1) + "行");
+                    throw new System.Exception("检查输入第" + (i + 1) + "行，sheetname=" + sheet.SheetName);
                 string note = cell1.StringCellValue;
                 string name = cell2.StringCellValue;
-                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
                 declaras.Add(string.Format("{0} = {1}--[[{2}]]", name, i + 1, note));
             }
@@ -40,7 +42,7 @@ namespace exporter
 
             // 开头
             sb.AppendLine(CodeTemplate.Get("template_title")
-                .Replace("[SHEET_NAME]", sheet.SheetName)
+                .Replace("[SHEET_NAME]", sheet.SheetName.Substring(3))
                 .Replace("[USEFUL_ROW_COUNT]", (sheet.LastRowNum + 1).ToString())
                 );
 
@@ -130,8 +132,24 @@ namespace exporter
                     );
             }
 
+            // 枚举器
+            sb.AppendLine("\n-- enumerator");
+            sb.AppendLine("sheet.enumerator = {}");
+            foreach (var item in FormulaEnumerator.GetList(sheet))
+            {
+                sb.AppendLine("sheet.enumerator." + item.name + " = {}");
+                sb.AppendLine("sheet.enumerator." + item.name + ".start = " + (item.start + 1));
+                sb.AppendLine("sheet.enumerator." + item.name + ".over = " + (item.end + 1));
+                sb.AppendLine("sheet.enumerator." + item.name + ".div = " + item.div);
+                sb.AppendLine("sheet.enumerator." + item.name + ".key = " + (item.key - 1));
+                sb.AppendLine("sheet.enumerator." + item.name + ".propertys = {");
+                for (int i = 0; i < item.propertys.Count; i++)
+                    sb.AppendLine("\"" + item.propertys[i] + "\", --" + item.notes[i]);
+                sb.AppendLine("}");
+            }
+
             // 结果
-            formulaContents.Add(sheet.SheetName, sb.ToString());
+            formulaContents.Add(sheet.SheetName.Substring(3), sb.ToString());
             return string.Empty;
         }
 
@@ -149,65 +167,95 @@ namespace exporter
             string dataDir = exportDir + "data" + Path.DirectorySeparatorChar;
             if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);
             Directory.CreateDirectory(dataDir);
+
+            List<string> results = new List<string>();
             foreach (var data in datas.Values)
             {
-                List<string> groupDeclaras = new List<string>();
-                Dictionary<string, List<string>> groupids = new Dictionary<string, List<string>>();
-
-                foreach (var values in data.dataContent)
+                ThreadPool.QueueUserWorkItem(ooo =>
                 {
-                    Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
-                    while (enumerator.MoveNext())
+                    List<string> groupDeclaras = new List<string>();
+                    Dictionary<string, List<string>> groupids = new Dictionary<string, List<string>>();
+
+                    foreach (var values in data.dataContent)
                     {
-                        string groupDeclara = "data.groups[\"" + enumerator.Current.Key + "\"]";
-                        if (!groupDeclaras.Contains(groupDeclara))
-                            groupDeclaras.Add(groupDeclara);
-                        for (int j = 0; j < enumerator.Current.Value.Length; j++)
+                        Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
+                        while (enumerator.MoveNext())
                         {
-                            object cv = values[data.groupindexs[enumerator.Current.Key][j]];
-                            groupDeclara += "[" + (cv is string ? "\"" + cv + "\"" : cv) + "]";
+                            string groupDeclara = "data.groups[\"" + enumerator.Current.Key + "\"]";
                             if (!groupDeclaras.Contains(groupDeclara))
                                 groupDeclaras.Add(groupDeclara);
+                            for (int j = 0; j < enumerator.Current.Value.Length; j++)
+                            {
+                                object cv = values[data.groupindexs[enumerator.Current.Key][j]];
+                                groupDeclara += "[" + (cv is string ? "\"" + cv + "\"" : cv) + "]";
+                                if (!groupDeclaras.Contains(groupDeclara))
+                                    groupDeclaras.Add(groupDeclara);
+                            }
+                            if (!groupids.ContainsKey(groupDeclara))
+                                groupids.Add(groupDeclara, new List<string>());
+                            groupids[groupDeclara].Add(values[0].ToString());
                         }
-                        if (!groupids.ContainsKey(groupDeclara))
-                            groupids.Add(groupDeclara, new List<string>());
-                        groupids[groupDeclara].Add(values[0].ToString());
                     }
-                }
 
-                Dictionary<string, List<string>> groupsItemCount = new Dictionary<string, List<string>>();
-                foreach (var key in groupids.Keys)
-                {
-                    string[] arr = key.Split(']');
-                    string title = "";
-                    for (int i = 0; i < arr.Length - 2; i++)
+                    Dictionary<string, List<string>> groupsItemCount = new Dictionary<string, List<string>>();
+                    foreach (var key in groupids.Keys)
                     {
-                        title += arr[i] + "]";
-                        if (!groupsItemCount.ContainsKey(title))
-                            groupsItemCount[title] = new List<string>();
-                        if (!groupsItemCount[title].Contains(title + arr[i + 1] + "]"))
-                            groupsItemCount[title].Add(title + arr[i + 1] + "]");
+                        string[] arr = key.Split(']');
+                        string title = "";
+                        for (int i = 0; i < arr.Length - 2; i++)
+                        {
+                            title += arr[i] + "]";
+                            if (!groupsItemCount.ContainsKey(title))
+                                groupsItemCount[title] = new List<string>();
+                            if (!groupsItemCount[title].Contains(title + arr[i + 1] + "]"))
+                                groupsItemCount[title].Add(title + arr[i + 1] + "]");
+                        }
                     }
-                }
 
-                File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
-                    CodeTemplate.Get("template_data")
-                    .Replace("[DATA_TABLE_NAME]", data.name)
-                    .Replace("[DATA_KEYS]", string.Join(",\n", data.keys.Select(engname => { return "\"" + engname + "\"--[[" + data.keyNames[data.keys.IndexOf(engname)] + "]]"; })))
-                    .Replace("[DATA_COLS]", string.Join("\n", data.cols.Select(i => { return "data.cols[" + (i + 1) + "] = " + (data.cols.IndexOf(i) + 1); })))
-                    .Replace("[DATA_IDS]", string.Join(",", data.ids))
-                    .Replace("[DECLARA_GROUPS]", string.Join("\n", groupDeclaras.Select(gd => { return gd + " = {}"; })))
-                    .Replace("[DATA_GROUPS]", string.Join("\n", groupids.Select(o => { return o.Key + " = {" + string.Join(",", o.Value) + "}"; })))
-                    .Replace("[DATA_GROUPS_COUNT]", string.Join("\n", groupsItemCount.Select(o =>
-                    {
-                        string nkey = o.Key.Replace("data.groups[", "data.groupscount[");
-                        return nkey + " = {}\n" + nkey + ".count = " + o.Value.Count;
-                    })))
-                    .Replace("[DATA_LINES]", string.Join("\n", data.dataContent.Select(values => { return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v => { return v is string ? "[[" + v + "]]" : v; })) + "}"; })))
-                    , new UTF8Encoding(false));
+
+                    File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
+                        CodeTemplate.Get("template_data")
+                        .Replace("[EXCEL_FILES]", string.Join(",", data.files))
+                        .Replace("[DATA_TABLE_NAME]", data.name)
+                        .Replace("[DATA_KEYS]", string.Join(",\n", data.keys.Select(engname => { return "\"" + engname + "\"--[[" + data.keyNames[data.keys.IndexOf(engname)] + "]]"; })))
+                        .Replace("[DATA_COLS]", string.Join("\n", data.cols.Select(i => { return "data.cols[" + (i + 1) + "] = " + (data.cols.IndexOf(i) + 1); })))
+                        .Replace("[DATA_IDS]", string.Join(",", data.ids))
+                        .Replace("[DECLARA_GROUPS]", string.Join("\n", groupDeclaras.Select(gd => { return gd + " = {}"; })))
+                        .Replace("[DATA_GROUPS]", string.Join("\n", groupids.Select(o => { return o.Key + " = {" + string.Join(",", o.Value) + "}"; })))
+                        .Replace("[DATA_GROUPS_COUNT]", string.Join("\n", groupsItemCount.Select(o =>
+                        {
+                            string nkey = o.Key.Replace("data.groups[", "data.groupscount[");
+                            return nkey + " = {}\n" + nkey + ".count = " + o.Value.Count;
+                        })))
+                        .Replace("[DATA_LINES]", string.Join("\n", data.dataContent.Select(values =>
+                        {
+                            return "data.lines[" + values[0] + "] = {" + string.Join(",", values.Select(v =>
+                            {
+                                if (v is string) return ModifyLuaString(v as string);
+                                if (v is string[]) return "{" + string.Join(",", (v as string[]).Select(ModifyLuaString)) + "}";
+                                if (v is int[]) return "{" + string.Join(",", v as int[]) + "}";
+                                if (v is double[]) return "{" + string.Join(",", v as double[]) + "}";
+                                return v;
+                            })) + "}";
+                        })))
+                        , new UTF8Encoding(false));
+
+                    lock (results)
+                        results.Add(string.Empty);
+                });
             }
 
+            while (results.Count < datas.Values.Count)
+                Thread.Sleep(TimeSpan.FromSeconds(0.01));
             return string.Empty;
+        }
+
+        static string ModifyLuaString(string s)
+        {
+            string cs = "";
+            while (s.Contains(cs + "]"))
+                cs += "=";
+            return "[" + cs + "[" + s + "]" + cs + "]";
         }
     }
 }

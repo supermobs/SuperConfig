@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CodeTemplate.cs" />
+    <Compile Include="CustomWorkbook.cs" />
     <Compile Include="ExcelFormulaGrammar.cs" />
     <Compile Include="ExcelFormulaParser.cs" />
     <Compile Include="Exporter.cs" />
