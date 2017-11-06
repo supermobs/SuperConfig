@@ -49,7 +49,7 @@
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 2;
-            this.button2.Text = "导出";
+            this.button2.Text = "Just Do It!"; // 导出
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
@@ -59,8 +59,8 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(315, 32);
             this.label1.TabIndex = 0;
-            this.label1.Text = "请选择excel目录";
-            this.label1.Click += new System.EventHandler(this.label_Click);
+            this.label1.Text = "select folder"; // 请选择excel目录
+			this.label1.Click += new System.EventHandler(this.label_Click);
             // 
             // groupBox1
             // 
@@ -70,7 +70,7 @@
             this.groupBox1.Size = new System.Drawing.Size(327, 52);
             this.groupBox1.TabIndex = 10;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "配置表目录";
+            this.groupBox1.Text = "excel folder"; // 配置表目录
             // 
             // groupBox2
             // 
@@ -80,7 +80,7 @@
             this.groupBox2.Size = new System.Drawing.Size(327, 52);
             this.groupBox2.TabIndex = 11;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "客户端导出目录";
+            this.groupBox2.Text = "client code folder"; // 客户端导出目录
             // 
             // label2
             // 
@@ -88,7 +88,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(315, 32);
             this.label2.TabIndex = 0;
-            this.label2.Text = "请选择excel目录";
+            this.label2.Text = "select folder"; // 请选择excel目录
             this.label2.Click += new System.EventHandler(this.label_Click);
             // 
             // groupBox3
@@ -99,7 +99,7 @@
             this.groupBox3.Size = new System.Drawing.Size(327, 52);
             this.groupBox3.TabIndex = 12;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "服务端代码导出目录";
+            this.groupBox3.Text = "server code folder"; // 服务端代码导出目录
             // 
             // label3
             // 
@@ -107,7 +107,7 @@
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(315, 32);
             this.label3.TabIndex = 0;
-            this.label3.Text = "请选择excel目录";
+            this.label3.Text = "select folder"; // 请选择excel目录
             this.label3.Click += new System.EventHandler(this.label_Click);
             // 
             // groupBox4
@@ -118,7 +118,7 @@
             this.groupBox4.Size = new System.Drawing.Size(327, 52);
             this.groupBox4.TabIndex = 13;
             this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "服务端配置导出目录";
+            this.groupBox4.Text = "server config folder"; // 服务端配置导出目录
             // 
             // label4
             // 
@@ -126,7 +126,7 @@
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(315, 32);
             this.label4.TabIndex = 0;
-            this.label4.Text = "请选择excel目录";
+            this.label4.Text = "select folder"; // 请选择excel目录
             this.label4.Click += new System.EventHandler(this.label_Click);
             // 
             // Form1
@@ -140,7 +140,7 @@
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.button2);
             this.Name = "Form1";
-            this.Text = "excel导出工具";
+            this.Text = "excel export tool"; // excel导出工具
             this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);

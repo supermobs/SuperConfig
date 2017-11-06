@@ -102,6 +102,7 @@ namespace exporter
                 if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls"))
                     continue;
 
+                // 这里会算这个表的信息
                 CustomWorkbook book = new CustomWorkbook(file);
                 book.type = CustomWorkbookType.Export;
                 totalCount++;

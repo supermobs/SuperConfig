@@ -1,0 +1,18 @@
+﻿<Properties StartupConfiguration="{808484AD-D5AA-4CE2-B846-636EA2132576}|Default">
+  <MonoDevelop.Ide.Workbench ActiveDocument="exporter/Form1.cs">
+    <Files>
+      <File FileName="exporter/Exporter.cs" Line="361" Column="22" />
+      <File FileName="exporter/ExporterLua.cs" Line="88" Column="69" />
+      <File FileName="exporter/Formula2Code.cs" Line="138" Column="21" />
+      <File FileName="exporter/ExporterGo.cs" Line="338" Column="44" />
+      <File FileName="exporter/Form1.cs" Line="80" Column="34" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.ItemProperties.exporter PreferredExecutionTarget="MonoDevelop.Default" />
+  <MultiItemStartupConfigurations />
+</Properties>

@@ -15,7 +15,8 @@ namespace exporter
         public enum Langue
         {
             Lua,
-            Go
+            Go,
+            CS
         }
 
         public static Langue curlang = Langue.Lua;
@@ -26,6 +27,7 @@ namespace exporter
             {
                 case Langue.Lua: key = "[LUA]" + key; break;
                 case Langue.Go: key = "[GO]" + key; break;
+                case Langue.CS: key = "[CS]" + key; break;
             }
 
             if (!allkeys.Contains(key))

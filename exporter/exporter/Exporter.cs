@@ -120,9 +120,14 @@ namespace exporter
                     throw new Exception(msg);
         }
 
+        /// <summary>
+        /// 处理每一张表的数据,在一个文件里面
+        /// 如果一个列前缀_则过滤掉
+        /// </summary>
         static string DealWithDataSheet(ISheet sheet, CustomWorkbook book)
         {
             string tableName = sheet.SheetName;
+
             if (tableName.StartsWith("_"))
                 return string.Empty;
 
@@ -367,6 +372,10 @@ namespace exporter
             }
         }
 
+        /// <summary>
+        /// 当读取完所有的books后进行处理
+        /// 只针对需要导出的表,引用不处理数据
+        /// </summary>
         public static string ReadDataXlsx()
         {
             datas = new Dictionary<string, DataStruct>();
@@ -384,6 +393,7 @@ namespace exporter
                     ISheet sheet = book.workbook.GetSheetAt(i);
                     if (sheet.SheetName.StartsWith("(F)") || sheet.SheetName.StartsWith("_"))
                         continue;
+
                     ThreadPool.QueueUserWorkItem(o =>
                     {
                         string error;
@@ -412,6 +422,7 @@ namespace exporter
             return string.Empty;
         }
 
+        // 读取公式,公式处理方法可以委托,不同语言
         public static string ReadFormulaXlsx(Func<ISheet, string> deal)
         {
             formulaContents = new Dictionary<string, string>();

@@ -123,6 +123,9 @@ namespace exporter
                             case GrammarNames.TokenFileNameNumeric: // 文件名不重要，忽略
                                 return "";
 
+                            case GrammarNames.TokenUDF: //mac????
+                                return "";
+
                             default:
                                 if (node.Term.Flags.HasFlag(TermFlags.IsOperator))
                                 {
@@ -140,6 +143,7 @@ namespace exporter
                     {
                         switch (node.Term.Name)
                         {
+                            case GrammarNames.UDFunctionCall: // mac ???
                             case GrammarNames.ReferenceFunctionCall:
                             case GrammarNames.FunctionCall:
                                 // 函数调用，找出函数和参数组合代码

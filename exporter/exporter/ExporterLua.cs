@@ -33,6 +33,9 @@ namespace exporter
             return string.Join(",\n", declaras);
         }
 
+        /// <summary>
+        /// 处理lua表格的formula 
+        /// </summary>
         public static string DealWithFormulaSheetLua(ISheet sheet)
         {
             CodeTemplate.curlang = CodeTemplate.Langue.Lua;
