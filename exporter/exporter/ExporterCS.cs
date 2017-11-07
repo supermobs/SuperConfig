@@ -212,20 +212,25 @@ namespace exporter
             else
                 Directory.CreateDirectory(configExportDir);
             if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
-            new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            new DirectoryInfo(codeExportDir).GetFiles("data_*.cs").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
             new DirectoryInfo(codeExportDir).GetFiles("formula_*.cs").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
 
             // 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
-            typeconvert.Add("int", "int32");
+            typeconvert.Add("int", "int");
+            typeconvert.Add("int32", "int");
             typeconvert.Add("string", "string");
-            typeconvert.Add("double", "float32");
-            typeconvert.Add("[]int", "[]int32");
-            typeconvert.Add("[]string", "[]string");
-            typeconvert.Add("[]double", "[]float32");
+            typeconvert.Add("double", "float");
+            typeconvert.Add("[]int", "int[]");
+            typeconvert.Add("[]int32", "int[]");
+            typeconvert.Add("[]string", "string[]");
+            typeconvert.Add("[]double", "float[]");
+
             // 索引类型转换
             Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
-            mapTypeConvert.Add("int32", "int32");
+            mapTypeConvert.Add("int", "int");
+            mapTypeConvert.Add("float", "float");
+            mapTypeConvert.Add("int32","int");
             mapTypeConvert.Add("string", "string");
             mapTypeConvert.Add("float32", "string");
 
@@ -237,7 +242,7 @@ namespace exporter
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".cs", formula.Value, new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
-                lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
+                // lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
             }
 
             List<string> results = new List<string>();
@@ -248,109 +253,140 @@ namespace exporter
                 ThreadPool.QueueUserWorkItem(ooo =>
                 {
                     string bigname = data.name.Substring(0, 1).ToUpper() + data.name.Substring(1);
+                    string tableClassName = bigname + "Table";
+                    string configClassName = bigname + "Config";
+                    string groupClassName = bigname+"TableGroup";
 
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("package config");
-                    sb.AppendLine("import (");
-                    sb.AppendLine("\"encoding/json\"");
-                    sb.AppendLine("\"io/ioutil\"");
-                    sb.AppendLine("\"log\"");
-                    sb.AppendLine(")");
+                    sb.AppendLine("using System;");
+                    sb.AppendLine("using UnityEngine;");
+                    sb.AppendLine("using System.Collections;");
+                    sb.AppendLine("using System.Collections.Generic;");
+                    sb.AppendLine("\n");
 
-                    sb.AppendLine("// " + string.Join(",", data.files));
-                    sb.AppendLine("type " + bigname + "Table struct {");
-                    sb.AppendLine("Name string");
-                    sb.AppendLine("Datas map[int32]*" + bigname + "Config");
-                    sb.AppendLine("Group *" + bigname + "TableGroup");
+                    // 扩展Config类统一获取某个表的实例对象
+                    sb.AppendLine("public partial class Config {");
+
+                    // 获取方法
+                    sb.AppendLine("\tstatic " + tableClassName + " _" +tableClassName + ";");
+                    sb.AppendLine("\tpublic static " + tableClassName + " Get" + tableClassName +"(){ " );
+                    sb.AppendLine("\t\treturn _" + tableClassName + ";");
+                    sb.AppendLine("\t}");
+
+                    // 加载方法
+                    sb.AppendLine("\tpublic static void Load"+tableClassName+"(){");
                     sb.AppendLine("}");
 
-                    sb.AppendLine("type " + bigname + "TableGroup struct {");
+                    sb.AppendLine("}\n");
+
+                    //------
+
+                    // group class
+                    sb.AppendLine("public class " + groupClassName + " {");
                     foreach (var g in data.groups)
                     {
-                        sb.Append(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
-                        sb.Append(" ");
+                        sb.Append("\t");
+                        sb.Append("public ");
+                        //  Dictionary<int,Dic<int,Dic<int,[]int>>> 
                         foreach (var t in g.Value)
-                            sb.Append("map[" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + "]");
-                        sb.AppendLine("[]int32");
+                            sb.Append("Dictionary<"+mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
+                        sb.Append("int[]");
+                        foreach (var t in g.Value)
+                            sb.Append(">");
+
+                        sb.Append(" ");
+                        sb.AppendLine(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1) + ";");
+                        // per group value
                     }
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
-                    sb.AppendLine("type " + bigname + "Config struct {");
+                    // config class
+                    sb.AppendLine("public class " + configClassName + " {");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
-                        sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " + typeconvert[data.types[i]] + " " + "// " + data.keyNames[i]);
+                        sb.AppendLine("\tpublic " + typeconvert[data.types[i]] + " " + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + "; " + "// " + data.keyNames[i]);
                     }
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
-                    sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
-                    sb.AppendLine("func loadSheet" + bigname + "(){");
-                    lock (loadfuncs) loadfuncs.Add("loadSheet" + bigname);
-                    sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
-                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
-                    sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
-                    sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
-                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
+                    // table class
+                    sb.AppendLine("// " + string.Join(",", data.files));
+                    sb.AppendLine("public class " + tableClassName + " {");
+                    sb.AppendLine("\tstring Name;");
+                    sb.AppendLine(string.Format("\tDictionary<int, {0}> _Datas;",configClassName));
+                    sb.AppendLine(string.Format("\t{0} _Group;",groupClassName));
+                    sb.AppendLine("");
 
+                    // get config function
+                    sb.AppendLine("public " + configClassName + " Get(int id) {");
+                    sb.AppendLine("\tif (_Datas.ContainsKey(id))");
+                    sb.AppendLine("\t\treturn _Datas[id];");
+                    sb.AppendLine("\treturn null;");
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
-                    sb.AppendLine("func Get" + bigname + "Table() *" + bigname + "Table {");
-                    sb.AppendLine("return _" + bigname + "Ins");
-                    sb.AppendLine("}");
-                    sb.AppendLine("");
-
-                    sb.AppendLine("func (ins *" + bigname + "Table) Get(id int32) *" + bigname + "Config {");
-                    sb.AppendLine("data, ok:= ins.Datas[id]");
-                    sb.AppendLine("if ok { return data }");
-                    sb.AppendLine("return nil");
-                    sb.AppendLine("}");
-
+                    // group data function
                     foreach (var g in data.groups)
                     {
                         sb.AppendLine("");
-                        sb.Append("func(ins * " + bigname + "Table) Get_" + g.Key.Replace("|", "_") + "(");
+                        sb.Append("public "+configClassName+"[]" +  " Get_" + g.Key.Replace("|", "_") + "(");
                         foreach (var t in g.Value)
-                            sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
+                            sb.Append(mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + " " + t.Substring(0, 1).ToUpper() + t.Substring(1) + ",");
                         sb.Remove(sb.Length - 1, 1);
-                        sb.AppendLine(") []*" + bigname + "Config {");
+                        sb.AppendLine(") {");
 
+
+                        string oldDictName = "_Group."+g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1);
+                        string oldKeyName = "";
                         for (int i = 0; i < g.Value.Length; i++)
                         {
-                            sb.Append("if tmp" + i + ", ok:= ");
                             if (i == 0)
-                                sb.Append("ins.Group." + g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
+                            {
+                                sb.Append("if (" + oldDictName + ".ContainsKey(");
+                                oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
+                                sb.AppendLine(oldKeyName + ") ){");
+                            }
                             else
-                                sb.Append("tmp" + (i - 1));
-                            sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) + "]; ok {");
+                            {
+                                string tempName = "tmp" + (i - 1); 
+                                sb.AppendLine("var " + tempName + " = " + oldDictName + "[" + oldKeyName+"];");
+                                sb.Append("if (" + tempName + ".ContainsKey(");
+                                oldDictName = tempName;
+                                oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
+                                sb.AppendLine(oldKeyName + ") ){");
+                            }
                         }
 
-
-                        sb.AppendLine("ids:= tmp" + (g.Value.Length - 1));
-                        sb.AppendLine("configs := make([]*" + bigname + "Config, len(ids))");
-                        sb.AppendLine("for i, id := range ids {");
-                        sb.AppendLine("configs[i] = ins.Get(id)");
+                        sb.AppendLine("var ids = " + oldDictName + "[" + oldKeyName + "];");
+                        sb.AppendLine("var configs = new " + configClassName + "[" + oldDictName + ".Count];");
+                        sb.AppendLine("for (int i = 0; i < ids.Length; i++) {");
+                        sb.AppendLine("\tvar id = ids[i];");
+                        sb.AppendLine("\tconfigs[i] = Get(id);");
                         sb.AppendLine("}");
-                        sb.AppendLine("return configs");
+                        sb.AppendLine("return configs;");
 
                         for (int i = 0; i < g.Value.Length; i++)
                             sb.AppendLine("}");
-                        sb.AppendLine("return make([]*" + bigname + "Config, 0) }");
+                        sb.AppendLine("return new "+configClassName + "[0];");
+                        sb.AppendLine("}");
                     }
 
-
+                    sb.AppendLine("");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
                         if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
                             continue;
-                        sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float32) float32 {");
-                        sb.AppendLine("return float32(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
+                        sb.AppendLine("public float data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(float id) {");
+                        sb.AppendLine("\treturn (float)(Config.Get" + tableClassName + "()._Datas[(int)(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");");
                         sb.AppendLine("}");
                     }
 
-                    File.WriteAllText(codeExportDir + "data_" + data.name + ".go", sb.ToString());
+                    sb.AppendLine("}"); // table class结束
+
+                    File.WriteAllText(codeExportDir + "data_" + data.name + ".cs", sb.ToString());
                     Interlocked.Increment(ref goWriteCount);
+                    lock (loadfuncs) loadfuncs.Add("Config.Load" + tableClassName);
 
                     lock (results)
                         results.Add(string.Empty);
@@ -424,27 +460,29 @@ namespace exporter
             // 写加载
             loadfuncs.Sort();
             StringBuilder loadcode = new StringBuilder();
-            loadcode.AppendLine("package config");
-            loadcode.AppendLine("import (");
-            loadcode.AppendLine("\"time\"");
-            loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
-            loadcode.AppendLine(")");
-            loadcode.AppendLine("func Load(){");
-            loadcode.AppendLine("start:= time.Now()");
+            loadcode.AppendLine("using System;");
+            loadcode.AppendLine("using UnityEngine;");
+            loadcode.AppendLine("using System.Collections;");
+            loadcode.AppendLine("using System.Collections.Generic;");
+            loadcode.AppendLine("\n");
+
+            // 扩展Config类统一获取某个表的实例对象
+            loadcode.AppendLine("public partial class Config {");
+            loadcode.AppendLine("\tpublic static void Load() {");
             foreach (var str in loadfuncs)
-                loadcode.AppendLine(str + "()");
-            loadcode.AppendLine("log.Release(\"config load success use % f s\", float64(time.Now().UnixNano()-start.UnixNano())/1e9)");
+                loadcode.AppendLine(str + "();");
             loadcode.AppendLine("}");
-            File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
+            loadcode.AppendLine("}");
+            File.WriteAllText(codeExportDir + "load.cs", loadcode.ToString());
 
             // 格式化go代码
-            ProcessStartInfo info = new ProcessStartInfo();
-            info.FileName = "gofmt";
-            info.WindowStyle = ProcessWindowStyle.Hidden;
-            info.UseShellExecute = true;
-            info.ErrorDialog = false;
-            info.Arguments = "-w " + codeExportDir;
-            Process.Start(info).WaitForExit();
+            // ProcessStartInfo info = new ProcessStartInfo();
+            // info.FileName = "gofmt";
+            // info.WindowStyle = ProcessWindowStyle.Hidden;
+            // info.UseShellExecute = true;
+            // info.ErrorDialog = false;
+            // info.Arguments = "-w " + codeExportDir;
+            // Process.Start(info).WaitForExit();
 
             // 等待所有文件完成
             while (results.Count < datas.Values.Count * 2)
