@@ -92,7 +92,7 @@ namespace exporter
                     {
                         List<CellCoord> about;
                         sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
-                        sb.AppendLine("return " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about));
+                        sb.AppendLine("return " + Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);

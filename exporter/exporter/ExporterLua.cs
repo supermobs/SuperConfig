@@ -82,7 +82,7 @@ namespace exporter
                         sb.AppendLine(CodeTemplate.Get("template_func")
                             .Replace("[ROW]", (rownum + 1).ToString())
                             .Replace("[COL]", (colnum + 1).ToString())
-                            .Replace("[CONTENT]", Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about))
+                            .Replace("[CONTENT]", Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about))
                             );
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
