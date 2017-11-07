@@ -109,7 +109,7 @@ namespace exporter
                     {
                         List<CellCoord> about;
                         sb.AppendLine("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = ins => {");
-                        sb.AppendLine("\treturn " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about) + ";");
+                        sb.AppendLine("\treturn (float)" + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about) + ";");
                         sb.AppendLine("};\n");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);

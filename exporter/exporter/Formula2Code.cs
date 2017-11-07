@@ -90,6 +90,7 @@ namespace exporter
                     {
                         switch (node.Term.Name)
                         {
+                            case GrammarNames.TokenUDF:
                             case GrammarNames.TokenExcelConditionalRefFunction:
                             case GrammarNames.TokenExcelRefFunction:
                             case GrammarNames.ExcelFunction:
@@ -121,9 +122,6 @@ namespace exporter
                                 return "";
 
                             case GrammarNames.TokenFileNameNumeric: // 文件名不重要，忽略
-                                return "";
-
-                            case GrammarNames.TokenUDF: //mac????
                                 return "";
 
                             default:
