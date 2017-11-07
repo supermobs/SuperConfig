@@ -236,6 +236,7 @@ namespace exporter
 
             int goWriteCount = 0;
             List<string> loadfuncs = new List<string>();
+            List<string> clearfuncs = new List<string>();
 
             // 写公式
             foreach (var formula in formulaContents)
@@ -247,7 +248,7 @@ namespace exporter
 
             List<string> results = new List<string>();
 
-            // 写go
+            // 写cs
             foreach (var data in datas.Values)
             {
                 ThreadPool.QueueUserWorkItem(ooo =>
@@ -262,6 +263,8 @@ namespace exporter
                     sb.AppendLine("using UnityEngine;");
                     sb.AppendLine("using System.Collections;");
                     sb.AppendLine("using System.Collections.Generic;");
+                    sb.AppendLine("using Newtonsoft.Json;");
+                    sb.AppendLine("using SuperMobs.Core;");
                     sb.AppendLine("\n");
 
                     // 扩展Config类统一获取某个表的实例对象
@@ -270,12 +273,21 @@ namespace exporter
                     // 获取方法
                     sb.AppendLine("\tstatic " + tableClassName + " _" +tableClassName + ";");
                     sb.AppendLine("\tpublic static " + tableClassName + " Get" + tableClassName +"(){ " );
+                    sb.AppendLine(string.Format("\tif({0} == null) Load{1}();","_"+tableClassName,tableClassName));
                     sb.AppendLine("\t\treturn _" + tableClassName + ";");
                     sb.AppendLine("\t}");
 
                     // 加载方法
                     sb.AppendLine("\tpublic static void Load"+tableClassName+"(){");
-                    sb.AppendLine("}");
+                    sb.AppendLine(string.Format("\t\tvar json = Service.Get<ILoaderService>().LoadConfig(\"{0}\");",data.name));
+                    sb.AppendLine(string.Format("\t\t{0} = JsonConvert.DeserializeObject<{1}>(json);","_"+tableClassName,tableClassName));
+                    sb.AppendLine("\t}");
+
+                    // 清理方法
+                    sb.AppendLine(string.Format("\tpublic static void Clear{0} () {{",tableClassName));
+                    sb.AppendLine(string.Format("\t\t_{0} = null;",tableClassName));
+                    sb.AppendLine("\t}");
+                    lock (clearfuncs) clearfuncs.Add("Config.Clear" + tableClassName);
 
                     sb.AppendLine("}\n");
 
@@ -313,9 +325,9 @@ namespace exporter
                     // table class
                     sb.AppendLine("// " + string.Join(",", data.files));
                     sb.AppendLine("public class " + tableClassName + " {");
-                    sb.AppendLine("\tstring Name;");
-                    sb.AppendLine(string.Format("\tDictionary<int, {0}> _Datas;",configClassName));
-                    sb.AppendLine(string.Format("\t{0} _Group;",groupClassName));
+                    sb.AppendLine("\tpublic string Name;");
+                    sb.AppendLine(string.Format("\tpublic Dictionary<int, {0}> _Datas;",configClassName));
+                    sb.AppendLine(string.Format("\tpublic {0} _Group;",groupClassName));
                     sb.AppendLine("");
 
                     // get config function
@@ -402,7 +414,7 @@ namespace exporter
                     config["Name"] = data.name;
 
                     JObject datas = new JObject();
-                    config["Datas"] = datas;
+                    config["_Datas"] = datas;
                     foreach (var line in data.dataContent)
                     {
                         JObject ll = new JObject();
@@ -412,7 +424,7 @@ namespace exporter
                     }
 
                     JObject group = new JObject();
-                    config["Group"] = group;
+                    config["_Group"] = group;
                     Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
                     while (enumerator.MoveNext())
                         group[enumerator.Current.Key.Replace("|", "_")] = new JObject();
@@ -468,10 +480,19 @@ namespace exporter
 
             // 扩展Config类统一获取某个表的实例对象
             loadcode.AppendLine("public partial class Config {");
+
+            // load all
             loadcode.AppendLine("\tpublic static void Load() {");
             foreach (var str in loadfuncs)
-                loadcode.AppendLine(str + "();");
+                loadcode.AppendLine("\t" + str + "();");
             loadcode.AppendLine("}");
+
+            // clear all
+            loadcode.AppendLine("\tpublic static void Clear() {");
+            foreach (var str in clearfuncs)
+                loadcode.AppendLine("\t" + str + "();");
+            loadcode.AppendLine("}");
+
             loadcode.AppendLine("}");
             File.WriteAllText(codeExportDir + "load.cs", loadcode.ToString());
 
