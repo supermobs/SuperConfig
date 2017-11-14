@@ -219,14 +219,15 @@ namespace exporter
             mapTypeConvert.Add("float32", "string");
 
             int goWriteCount = 0;
-            List<string> loadfuncs = new List<string>();
+            List<string> loadFormulaFuncs = new List<string>();
+            Dictionary<string, string> loadTableFuncs = new Dictionary<string, string>();
 
             // 写公式
             foreach (var formula in formulaContents)
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
-                lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
+                lock (loadFormulaFuncs) loadFormulaFuncs.Add("loadFormula" + formula.Key);
             }
 
             List<string> results = new List<string>();
@@ -242,8 +243,6 @@ namespace exporter
                     sb.AppendLine("package config");
                     sb.AppendLine("import (");
                     sb.AppendLine("\"encoding/json\"");
-                    sb.AppendLine("\"io/ioutil\"");
-                    sb.AppendLine("\"log\"");
                     sb.AppendLine(")");
 
                     sb.AppendLine("// " + string.Join(",", data.files));
@@ -274,14 +273,13 @@ namespace exporter
                     sb.AppendLine("");
 
                     sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
-                    sb.AppendLine("func loadSheet" + bigname + "(){");
-                    lock (loadfuncs) loadfuncs.Add("loadSheet" + bigname);
-                    sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
-                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
-                    sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
-                    sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
-                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
-
+                    sb.AppendLine("func loadSheet" + bigname + "(data []byte) error{");
+                    lock (loadTableFuncs) loadTableFuncs.Add(data.name, "loadSheet" + bigname);
+                    sb.AppendLine("tmp:=new(" + bigname + "Table)");
+                    sb.AppendLine("err := json.Unmarshal(data,tmp)");
+                    sb.AppendLine("if err != nil { return err }");
+                    sb.AppendLine("_" + bigname + "Ins=tmp");
+                    sb.AppendLine("return nil");
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
@@ -411,18 +409,32 @@ namespace exporter
                 Thread.Sleep(10);
 
             // 写加载
-            loadfuncs.Sort();
+
             StringBuilder loadcode = new StringBuilder();
             loadcode.AppendLine("package config");
             loadcode.AppendLine("import (");
             loadcode.AppendLine("\"time\"");
+            loadcode.AppendLine("\"comm\"");
+            loadcode.AppendLine("\"fmt\"");
             loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
             loadcode.AppendLine(")");
+            loadcode.AppendLine("func init(){");
+            loadcode.AppendLine("defer cfg_init_success()");
+            foreach (var cfg in loadTableFuncs)
+                loadcode.AppendLine("cfg_regisiter(\"" + cfg.Key + "\", " + cfg.Value + ")");
+            loadcode.AppendLine("}");
+            loadcode.AppendLine("");
             loadcode.AppendLine("func Load(){");
             loadcode.AppendLine("start:= time.Now()");
-            foreach (var str in loadfuncs)
+            loadFormulaFuncs.Sort();
+            foreach (var str in loadFormulaFuncs)
                 loadcode.AppendLine(str + "()");
-            loadcode.AppendLine("log.Release(\"config load success use % f s\", float64(time.Now().UnixNano()-start.UnixNano())/1e9)");
+            loadcode.AppendLine();
+            loadcode.AppendLine("ret,err:= LoadConfig(false)");
+            loadcode.AppendLine("if err != nil {");
+            loadcode.AppendLine("log.Fatal(\"%v\", err)");
+            loadcode.AppendLine("}");
+            loadcode.AppendLine("comm.RecountUseTime(start, fmt.Sprintf(\"load config(% v) success!!!\", len(ret)))");
             loadcode.AppendLine("}");
             File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
 
