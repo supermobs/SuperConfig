@@ -37,15 +37,21 @@
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
+			this.groupBox5 = new System.Windows.Forms.GroupBox();
+			this.label5 = new System.Windows.Forms.Label();
+			this.groupBox6 = new System.Windows.Forms.GroupBox();
+			this.label6 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
+            this.groupBox5.SuspendLayout();
+            this.groupBox6.SuspendLayout();
             this.SuspendLayout();
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(266, 244);
+            this.button2.Location = new System.Drawing.Point(266, 360);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 2;
@@ -70,7 +76,7 @@
             this.groupBox1.Size = new System.Drawing.Size(327, 52);
             this.groupBox1.TabIndex = 10;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "excel folder"; // 配置表目录
+            this.groupBox1.Text = "excel"; // 配置表目录
             // 
             // groupBox2
             // 
@@ -80,7 +86,7 @@
             this.groupBox2.Size = new System.Drawing.Size(327, 52);
             this.groupBox2.TabIndex = 11;
             this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "client code folder"; // 客户端导出目录
+            this.groupBox2.Text = "lua output"; // 客户端导出目录
             // 
             // label2
             // 
@@ -99,7 +105,7 @@
             this.groupBox3.Size = new System.Drawing.Size(327, 52);
             this.groupBox3.TabIndex = 12;
             this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "server code folder"; // 服务端代码导出目录
+            this.groupBox3.Text = "go script output"; // 服务端代码导出目录
             // 
             // label3
             // 
@@ -118,7 +124,7 @@
             this.groupBox4.Size = new System.Drawing.Size(327, 52);
             this.groupBox4.TabIndex = 13;
             this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "server config folder"; // 服务端配置导出目录
+            this.groupBox4.Text = "go config output"; // 服务端配置导出目录
             // 
             // label4
             // 
@@ -128,12 +134,55 @@
             this.label4.TabIndex = 0;
             this.label4.Text = "select folder"; // 请选择excel目录
             this.label4.Click += new System.EventHandler(this.label_Click);
+
+			// 
+			// groupBox5
+			// 
+			this.groupBox5.Controls.Add(this.label5);
+			this.groupBox5.Location = new System.Drawing.Point(14, 244);
+			this.groupBox5.Name = "groupBox5";
+			this.groupBox5.Size = new System.Drawing.Size(327, 52);
+			this.groupBox5.TabIndex = 14;
+			this.groupBox5.TabStop = false;
+			this.groupBox5.Text = "c# script output"; // c# code
+		    // 
+            // label5
+            // 
+			this.label5.Location = new System.Drawing.Point(6, 17);
+			this.label5.Name = "label5";
+			this.label5.Size = new System.Drawing.Size(315, 32);
+			this.label5.TabIndex = 0;
+			this.label5.Text = "select folder"; // 请选择excel目录
+			this.label5.Click += new System.EventHandler(this.label_Click);
+
+			// 
+			// groupBox6
+			// 
+			this.groupBox6.Controls.Add(this.label6);
+            this.groupBox6.Location = new System.Drawing.Point(14, 302);
+            this.groupBox6.Name = "groupBox6";
+            this.groupBox6.Size = new System.Drawing.Size(327, 52);
+            this.groupBox6.TabIndex = 15;
+            this.groupBox6.TabStop = false;
+            this.groupBox6.Text = "c# config output"; // c# config
+															 // 
+															 // label5
+															 // 
+			this.label6.Location = new System.Drawing.Point(6, 17);
+			this.label6.Name = "label6";
+			this.label6.Size = new System.Drawing.Size(315, 32);
+			this.label6.TabIndex = 0;
+			this.label6.Text = "select folder"; // 请选择excel目录
+			this.label6.Click += new System.EventHandler(this.label_Click);
+
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(353, 275);
+            this.ClientSize = new System.Drawing.Size(353, 392);
+			this.Controls.Add(this.groupBox6);
+			this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -146,6 +195,8 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox6.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -160,6 +211,10 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.Label label4;
+		private System.Windows.Forms.GroupBox groupBox5;
+		private System.Windows.Forms.Label label5;
+		private System.Windows.Forms.GroupBox groupBox6;
+		private System.Windows.Forms.Label label6;
     }
 }
 

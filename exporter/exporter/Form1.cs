@@ -30,11 +30,13 @@ namespace exporter
                 InitializeComponent();
         }
 
-        string[] paths = new string[4];
+        string[] paths = new string[6];
         string pathConfigFile = "pathconfig";
+
         void LoadPaths()
         {
             pathConfigFile = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + pathConfigFile;
+
             if (File.Exists(pathConfigFile))
                 paths = File.ReadAllLines(pathConfigFile);
         }
@@ -76,13 +78,16 @@ namespace exporter
                         // 导出lua文件
                         // && CheckError(Exporter.ExportLua(paths[1]))
                         // 读 go 公式
-                        // && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))
+                         && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))
                         // 导出go文件
-                        // && CheckError(Exporter.ExportGo(paths[2], paths[3]));
+                         && CheckError(Exporter.ExportGo(paths[2], paths[3]))
                         // 读 cs 公式
                         && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetCS))
                         // 导出cs文件
-                        && CheckError(Exporter.ExportCS(paths[2], paths[3]));
+                        && CheckError(Exporter.ExportCS(paths[4], paths[5]))
+                        //&& CheckError()
+                    //
+                    ;
             }
             catch (Exception ex)
             {
@@ -97,7 +102,7 @@ namespace exporter
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            labels.AddRange(new Label[] { label1, label2, label3, label4 });
+            labels.AddRange(new Label[] { label1, label2, label3, label4 ,label5,label6});
 
             for (int index = 0; index < paths.Length; index++)
             {
