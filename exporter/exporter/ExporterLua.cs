@@ -176,6 +176,7 @@ namespace exporter
                     List<string> groupDeclaras = new List<string>();
                     Dictionary<string, List<string>> groupids = new Dictionary<string, List<string>>();
 
+                    data.dataContent.Sort((a, b) => { return (int)a[0] - (int)b[0]; });
                     foreach (var values in data.dataContent)
                     {
                         Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
@@ -212,7 +213,8 @@ namespace exporter
                         }
                     }
 
-
+                    data.ids.Sort();
+                    data.files.Sort();
                     File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
                         CodeTemplate.Get("template_data")
                         .Replace("[EXCEL_FILES]", string.Join(",", data.files))

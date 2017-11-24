@@ -245,6 +245,7 @@ namespace exporter
                     sb.AppendLine("\"encoding/json\"");
                     sb.AppendLine(")");
 
+                    data.files.Sort();
                     sb.AppendLine("// " + string.Join(",", data.files));
                     sb.AppendLine("type " + bigname + "Table struct {");
                     sb.AppendLine("Name string");
@@ -313,7 +314,6 @@ namespace exporter
                             sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) + "]; ok {");
                         }
 
-
                         sb.AppendLine("ids:= tmp" + (g.Value.Length - 1));
                         sb.AppendLine("configs := make([]*" + bigname + "Config, len(ids))");
                         sb.AppendLine("for i, id := range ids {");
@@ -354,6 +354,7 @@ namespace exporter
 
                     JObject datas = new JObject();
                     config["Datas"] = datas;
+                    data.dataContent.Sort((a, b) => { return (int)a[0] - (int)b[0]; });
                     foreach (var line in data.dataContent)
                     {
                         JObject ll = new JObject();
@@ -420,8 +421,10 @@ namespace exporter
             loadcode.AppendLine(")");
             loadcode.AppendLine("func init(){");
             loadcode.AppendLine("defer cfg_init_success()");
-            foreach (var cfg in loadTableFuncs)
-                loadcode.AppendLine("cfg_regisiter(\"" + cfg.Key + "\", " + cfg.Value + ")");
+            var keys = new List<string>(loadTableFuncs.Keys);
+            keys.Sort();
+            foreach (var key in keys)
+                loadcode.AppendLine("cfg_regisiter(\"" + key + "\", " + loadTableFuncs[key] + ")");
             loadcode.AppendLine("}");
             loadcode.AppendLine("");
             loadcode.AppendLine("func Load(){");
