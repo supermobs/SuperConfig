@@ -8,11 +8,17 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace exporter
 {
     public static partial class Exporter
     {
+		static string FixFloat(string format)
+		{
+			Regex reg = new Regex("\\d+\\.\\d+(?!f)");
+			return reg.Replace(format, match => match.Value + "f");
+		}
 
         /// <summary>
         /// 声明CS
@@ -53,7 +59,7 @@ namespace exporter
 
         public static string DealWithFormulaSheetCS(ISheet sheet)
         {
-            CodeTemplate.curlang = CodeTemplate.Langue.Go;
+            CodeTemplate.curlang = CodeTemplate.Langue.CS;
 
             StringBuilder sb = new StringBuilder();
             Dictionary<CellCoord, List<CellCoord>> abouts = new Dictionary<CellCoord, List<CellCoord>>();
@@ -109,7 +115,14 @@ namespace exporter
                     {
                         List<CellCoord> about;
                         sb.AppendLine("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = ins => {");
-                        sb.AppendLine("\treturn (float)" + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about) + ";");
+
+                        string content = Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about);
+                        if(CodeTemplate.curlang == CodeTemplate.Langue.CS)
+                        {
+                            content = FixFloat(content);
+                        }
+
+                        sb.AppendLine("\treturn (float)" + content + ";");
                         sb.AppendLine("};\n");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
