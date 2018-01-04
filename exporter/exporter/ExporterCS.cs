@@ -14,11 +14,11 @@ namespace exporter
 {
     public static partial class Exporter
     {
-		static string FixFloat(string format)
-		{
-			Regex reg = new Regex("\\d+\\.\\d+(?!f)");
-			return reg.Replace(format, match => match.Value + "f");
-		}
+        static string FixFloat(string format)
+        {
+            Regex reg = new Regex("\\d+\\.\\d+(?!f)");
+            return reg.Replace(format, match => match.Value + "f");
+        }
 
         /// <summary>
         /// 声明CS
@@ -44,15 +44,15 @@ namespace exporter
 
                 string sheetName = sheet.SheetName.Substring(3);
                 string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
-                sb.AppendLine("public float Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() { //" + note);
-                sb.AppendLine("\treturn get(" + ((i + 1) * 1000 + col * 1 + 3) + ");");
-                sb.AppendLine("}\n");
+                sb.Append("public float Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() { //" + note +"\r\n");
+                sb.Append("\treturn get(" + ((i + 1) * 1000 + col * 1 + 3) + ");\r\n");
+                sb.Append("}\r\n");
 
                 if (canWrite)
                 {
-                    sb.AppendLine("public void Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(float v) {//" + note);
-                    sb.AppendLine("\tset(" + ((i + 1) * 1000 + col + 3) + ",v);");
-                    sb.AppendLine("}\n");
+                    sb.Append("public void Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(float v) {//" + note + "\r\n");
+                    sb.Append("\tset(" + ((i + 1) * 1000 + col + 3) + ",v);\r\n");
+                    sb.Append("}\r\n");
                 }
             }
         }
@@ -68,28 +68,27 @@ namespace exporter
 
             string className = SheetName + "FormulaSheet";
 
-            sb.AppendLine("using System;");
-            sb.AppendLine("using UnityEngine;");
-            sb.AppendLine("using System.Collections;");
-            sb.AppendLine("using System.Collections.Generic;");
-            sb.AppendLine("\n");
+            sb.Append("using System;\r\n");
+            sb.Append("using UnityEngine;\r\n");
+            sb.Append("using System.Collections;\r\n");
+            sb.Append("using System.Collections.Generic;\r\n");
+            sb.Append("\r\n");
 
             // 扩展Config类统一获取某个表的实例对象
-            sb.AppendLine("public partial class Config {");
+            sb.Append("public partial class Config {\r\n");
 
-            sb.AppendLine("\tpublic static " + className + " New" + className +"(){ " );
-            sb.AppendLine("\t\tvar formula = new " + className +"();");
-            sb.AppendLine("\t\treturn formula;");
-            sb.AppendLine("\t}");
-
-            sb.AppendLine("}\n");
+            sb.Append("\tpublic static " + className + " New" + className +"(){\r\n" );
+            sb.Append("\t\tvar formula = new " + className +"();\r\n");
+            sb.Append("\t\tformula.Init();\r\n");
+            sb.Append("\t\treturn formula;\r\n");
+            sb.Append("\t}\r\n");
+            sb.Append("}\r\n");
 
             //------
 
             // 开始生成这个配置表的算法类
-            sb.AppendLine("public class " + className + " : FormulaSheet { //定义数据表类开始");
-
-            sb.AppendLine("public void Init(){");
+            sb.Append("public class " + className + " : FormulaSheet { //定义数据表类开始\r\n");
+            sb.Append("public void Init(){\r\n");
 
             // 数据内容
             for (int rownum = 0; rownum <= sheet.LastRowNum; rownum++)
@@ -109,12 +108,12 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.AppendLine("this.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()) +"f;");
+                        sb.Append("this.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()) +"f;\r\n");
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.AppendLine("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = ins => {");
+                        sb.Append("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = ins => {\r\n");
 
                         string content = Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about);
                         if(CodeTemplate.curlang == CodeTemplate.Langue.CS)
@@ -122,8 +121,8 @@ namespace exporter
                             content = FixFloat(content);
                         }
 
-                        sb.AppendLine("\treturn (float)" + content + ";");
-                        sb.AppendLine("};\n");
+                        sb.Append("\treturn (float)" + content + ";\r\n");
+                        sb.Append("};\r\n");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
                         foreach (CellCoord cc in about)
@@ -162,8 +161,8 @@ namespace exporter
 
             // 数据影响关联
             foreach (var item in abouts)
-                sb.AppendLine("this.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = new int[]{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "};");
-            sb.AppendLine("} // 初始化数据结束");
+                sb.Append("this.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = new int[]{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "};\r\n");
+            sb.Append("} // 初始化数据结束\r\n");
 
 
             // 声明
@@ -174,43 +173,43 @@ namespace exporter
             foreach (var item in FormulaEnumerator.GetList(sheet))
             {
                 // 写结构
-                sb.AppendLine("public struct " + item.fullName + " {");
+                sb.Append("public struct " + item.fullName + " {\r\n");
 
                 // 属性
-                sb.AppendLine("\tpublic " + className + " sheet;");
-                sb.AppendLine("\t int line;");
+                sb.Append("\tpublic " + className + " sheet;\r\n");
+                sb.Append("\t int line;\r\n");
                 for (int i = 0; i < item.propertys.Count; i++)
-                    sb.AppendLine("\tfloat " + item.propertys[i] + "; // " + item.notes[i]);
+                    sb.Append("\tfloat " + item.propertys[i] + "; // " + item.notes[i] + "\r\n");
 
                 // 枚举方法
-                sb.AppendLine("public bool MoveNext() {");
+                sb.Append("public bool MoveNext() {\r\n");
                 // MoveNext
-                sb.AppendLine("\tif (line <= 0) {");
-                sb.AppendLine("\t\tline = " + (item.start + 1) * 1000 + ";");
-                sb.AppendLine("\t} else {");
-                sb.AppendLine("\t\tline = line + " + item.div * 1000 + ";");
-                sb.AppendLine("}\n");
-                sb.AppendLine("\tif (line >= " + (item.end + 1) * 1000 + ") {");
-                sb.AppendLine("\t\treturn false;");
-                sb.AppendLine("}\n");
-                sb.AppendLine("\tif (sheet.get(line+" + (6 + 1000 * (item.key - 1)) + ") == 0 ) {");
-                sb.AppendLine("\t\treturn MoveNext();");
-                sb.AppendLine("}");
+                sb.Append("\tif (line <= 0) {\r\n");
+                sb.Append("\t\tline = " + (item.start + 1) * 1000 + ";\r\n");
+                sb.Append("\t} else {\r\n");
+                sb.Append("\t\tline = line + " + item.div * 1000 + ";\r\n");
+                sb.Append("}\r\n");
+                sb.Append("\tif (line >= " + (item.end + 1) * 1000 + ") {\r\n");
+                sb.Append("\t\treturn false;\r\n");
+                sb.Append("}\r\n");
+                sb.Append("\tif (sheet.get(line+" + (6 + 1000 * (item.key - 1)) + ") == 0 ) {\r\n");
+                sb.Append("\t\treturn MoveNext();\r\n");
+                sb.Append("}\r\n");
                 for (int i = 0; i < item.propertys.Count; i++)
-                    sb.AppendLine("" + item.propertys[i] + " = sheet.get(line+" + (6 + 1000 * i) + ");");
-                sb.AppendLine("\treturn true;");
-                sb.AppendLine("} // 枚举方法next结束");
-                sb.AppendLine("} // 枚举struct定义结束");
+                    sb.Append("" + item.propertys[i] + " = sheet.get(line+" + (6 + 1000 * i) + ");\r\n");
+                sb.Append("\treturn true;\r\n");
+                sb.Append("} // 枚举方法next结束\r\n");
+                sb.Append("} // 枚举struct定义结束\r\n");
 
                 // GetEnumerator
-                sb.AppendLine("public " + item.fullName + " Get"+item.name + "Enumerator(){");
-                sb.AppendLine("\tvar enumerator = new " + item.fullName + "();");
-                sb.AppendLine("\t\tenumerator.sheet = this;");
-                sb.AppendLine("\t\treturn enumerator;");
-                sb.AppendLine("}\n");
+                sb.Append("public " + item.fullName + " Get"+item.name + "Enumerator(){\r\n");
+                sb.Append("\tvar enumerator = new " + item.fullName + "();\r\n");
+                sb.Append("\t\tenumerator.sheet = this;\r\n");
+                sb.Append("\t\treturn enumerator;\r\n");
+                sb.Append("}\r\n");
             }
 
-            sb.AppendLine("\n\n}");
+            sb.Append("}\r\n");
 
             // 结果
             formulaContents.Add(SheetName, sb.ToString());
@@ -272,46 +271,45 @@ namespace exporter
                     string groupClassName = bigname+"TableGroup";
 
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("using System;");
-                    sb.AppendLine("using UnityEngine;");
-                    sb.AppendLine("using System.Collections;");
-                    sb.AppendLine("using System.Collections.Generic;");
-                    sb.AppendLine("using Newtonsoft.Json;");
-                    sb.AppendLine("using SuperMobs.Core;");
-                    sb.AppendLine("\n");
+                    sb.Append("using System;\r\n");
+                    sb.Append("using UnityEngine;\r\n");
+                    sb.Append("using System.Collections;\r\n");
+                    sb.Append("using System.Collections.Generic;\r\n");
+                    sb.Append("using Newtonsoft.Json;\r\n");
+                    sb.Append("using SuperMobs.Core;\r\n");
+                    sb.Append("\r\n");
 
                     // 扩展Config类统一获取某个表的实例对象
-                    sb.AppendLine("public partial class Config {");
+                    sb.Append("public partial class Config {\r\n");
 
                     // 获取方法
-                    sb.AppendLine("\tstatic " + tableClassName + " _" +tableClassName + ";");
-                    sb.AppendLine("\tpublic static " + tableClassName + " Get" + tableClassName +"(){ " );
-                    sb.AppendLine(string.Format("\tif({0} == null) Load{1}();","_"+tableClassName,tableClassName));
-                    sb.AppendLine("\t\treturn _" + tableClassName + ";");
-                    sb.AppendLine("\t}");
+                    sb.Append("\tstatic " + tableClassName + " _" +tableClassName + ";\r\n");
+                    sb.Append("\tpublic static " + tableClassName + " Get" + tableClassName +"(){\r\n" );
+                    sb.Append(string.Format("\tif({0} == null) Load{1}();\r\n","_"+tableClassName,tableClassName));
+                    sb.Append("\t\treturn _" + tableClassName + ";\r\n");
+                    sb.Append("\t}\r\n");
 
                     // 加载方法
-                    sb.AppendLine("\tpublic static void Load"+tableClassName+"(){");
-                    sb.AppendLine(string.Format("\t\tvar json = Service.Get<ILoaderService>().LoadConfig(\"{0}\");",data.name));
-                    sb.AppendLine(string.Format("\t\t{0} = JsonConvert.DeserializeObject<{1}>(json);","_"+tableClassName,tableClassName));
-                    sb.AppendLine("\t}");
+                    sb.Append("\tpublic static void Load"+tableClassName+"(){\r\n");
+                    sb.Append(string.Format("\t\tvar json = Service.Get<ILoaderService>().LoadConfig(\"{0}\");\r\n",data.name));
+                    sb.Append(string.Format("\t\t{0} = JsonConvert.DeserializeObject<{1}>(json);\r\n","_"+tableClassName,tableClassName));
+                    sb.Append("\t}\r\n");
 
-                    // 清理方法
-                    sb.AppendLine(string.Format("\tpublic static void Clear{0} () {{",tableClassName));
-                    sb.AppendLine(string.Format("\t\t_{0} = null;",tableClassName));
-                    sb.AppendLine("\t}");
+                    // 清理方
+                    sb.Append(string.Format("\tpublic static void Clear{0} () {{\r\n",tableClassName));
+                    sb.Append(string.Format("\t\t_{0} = null;\r\n",tableClassName));
+                    sb.Append("\t}\r\n");
                     lock (clearfuncs) clearfuncs.Add("Config.Clear" + tableClassName);
 
-                    sb.AppendLine("}\n");
+                    sb.Append("}\r\n");
 
                     //------
 
                     // group class
-                    sb.AppendLine("public class " + groupClassName + " {");
+                    sb.Append("public class " + groupClassName + " {\r\n");
                     foreach (var g in data.groups)
                     {
-                        sb.Append("\t");
-                        sb.Append("public ");
+                        sb.Append("\tpublic ");
                         //  Dictionary<int,Dic<int,Dic<int,[]int>>> 
                         foreach (var t in g.Value)
                             sb.Append("Dictionary<"+mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
@@ -320,46 +318,43 @@ namespace exporter
                             sb.Append(">");
 
                         sb.Append(" ");
-                        sb.AppendLine(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1) + ";");
+                        sb.Append(g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1) + ";\r\n");
                         // per group value
                     }
-                    sb.AppendLine("}");
-                    sb.AppendLine("");
+                    sb.Append("}\r\n");
 
                     // config class
-                    sb.AppendLine("public class " + configClassName + " {");
+                    sb.Append("public class " + configClassName + " {\r\n");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
-                        sb.AppendLine("\tpublic " + typeconvert[data.types[i]] + " " + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + "; " + "// " + data.keyNames[i]);
+                        sb.Append("\tpublic " + typeconvert[data.types[i]] + " " + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + "; " + "// " + data.keyNames[i] + "\r\n");
                     }
-                    sb.AppendLine("}");
-                    sb.AppendLine("");
+                    sb.Append("}\r\n");
 
                     // table class
-                    sb.AppendLine("// " + string.Join(",", data.files));
-                    sb.AppendLine("public class " + tableClassName + " {");
-                    sb.AppendLine("\tpublic string Name;");
-                    sb.AppendLine(string.Format("\tpublic Dictionary<int, {0}> _Datas;",configClassName));
-                    sb.AppendLine(string.Format("\tpublic {0} _Group;",groupClassName));
-                    sb.AppendLine("");
+                    sb.Append("// " + string.Join(",", data.files) + "\r\n");
+                    sb.Append("public class " + tableClassName + " {\r\n");
+                    sb.Append("\tpublic string Name;\r\n");
+                    sb.Append(string.Format("\tpublic Dictionary<int, {0}> _Datas;\r\n",configClassName));
+                    sb.Append(string.Format("\tpublic {0} _Group;\r\n",groupClassName));
+
 
                     // get config function
-                    sb.AppendLine("public " + configClassName + " Get(int id) {");
-                    sb.AppendLine("\tif (_Datas.ContainsKey(id))");
-                    sb.AppendLine("\t\treturn _Datas[id];");
-                    sb.AppendLine("\treturn null;");
-                    sb.AppendLine("}");
-                    sb.AppendLine("");
+                    sb.Append("public " + configClassName + " Get(int id) {\r\n");
+                    sb.Append("\tif (_Datas.ContainsKey(id))\r\n");
+                    sb.Append("\t\treturn _Datas[id];\r\n");
+                    sb.Append("\treturn null;\r\n");
+                    sb.Append("}\r\n");
+
 
                     // group data function
                     foreach (var g in data.groups)
                     {
-                        sb.AppendLine("");
-                        sb.Append("public "+configClassName+"[]" +  " Get_" + g.Key.Replace("|", "_") + "(");
+                        sb.Append("\tpublic "+configClassName+"[]" +  " Get_" + g.Key.Replace("|", "_") + "(");
                         foreach (var t in g.Value)
                             sb.Append(mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + " " + t.Substring(0, 1).ToUpper() + t.Substring(1) + ",");
                         sb.Remove(sb.Length - 1, 1);
-                        sb.AppendLine(") {");
+                        sb.Append(") {\r\n");
 
 
                         string oldDictName = "_Group."+g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1);
@@ -370,44 +365,43 @@ namespace exporter
                             {
                                 sb.Append("if (" + oldDictName + ".ContainsKey(");
                                 oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
-                                sb.AppendLine(oldKeyName + ") ){");
+                                sb.Append(oldKeyName + ") ){\r\n");
                             }
                             else
                             {
                                 string tempName = "tmp" + (i - 1); 
-                                sb.AppendLine("var " + tempName + " = " + oldDictName + "[" + oldKeyName+"];");
+                                sb.Append("var " + tempName + " = " + oldDictName + "[" + oldKeyName+"];\r\n");
                                 sb.Append("if (" + tempName + ".ContainsKey(");
                                 oldDictName = tempName;
                                 oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
-                                sb.AppendLine(oldKeyName + ") ){");
+                                sb.Append(oldKeyName + ") ){\r\n");
                             }
                         }
 
-                        sb.AppendLine("var ids = " + oldDictName + "[" + oldKeyName + "];");
-                        sb.AppendLine("var configs = new " + configClassName + "[" + oldDictName + ".Count];");
-                        sb.AppendLine("for (int i = 0; i < ids.Length; i++) {");
-                        sb.AppendLine("\tvar id = ids[i];");
-                        sb.AppendLine("\tconfigs[i] = Get(id);");
-                        sb.AppendLine("}");
-                        sb.AppendLine("return configs;");
+                        sb.Append("var ids = " + oldDictName + "[" + oldKeyName + "];\r\n");
+                        sb.Append("var configs = new " + configClassName + "[" + oldDictName + ".Count];\r\n");
+                        sb.Append("for (int i = 0; i < ids.Length; i++) {\r\n");
+                        sb.Append("\tvar id = ids[i];\r\n");
+                        sb.Append("\tconfigs[i] = Get(id);\r\n");
+                        sb.Append("}\r\n");
+                        sb.Append("return configs;\r\n");
 
                         for (int i = 0; i < g.Value.Length; i++)
-                            sb.AppendLine("}");
-                        sb.AppendLine("return new "+configClassName + "[0];");
-                        sb.AppendLine("}");
+                            sb.Append("}\r\n");
+                        sb.Append("return new "+configClassName + "[0];\r\n");
+                        sb.Append("}\r\n");
                     }
 
-                    sb.AppendLine("");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
                         if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
                             continue;
-                        sb.AppendLine("public float data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(float id) {");
-                        sb.AppendLine("\treturn (float)(Config.Get" + tableClassName + "()._Datas[(int)(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");");
-                        sb.AppendLine("}");
+                        sb.Append("\tpublic float data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(float id) {\r\n");
+                        sb.Append("\treturn (float)(Config.Get" + tableClassName + "()._Datas[(int)(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");\r\n");
+                        sb.Append("}\r\n");
                     }
 
-                    sb.AppendLine("}"); // table class结束
+                    sb.Append("}\r\n"); // table class结束
 
                     File.WriteAllText(codeExportDir + "data_" + data.name + ".cs", sb.ToString());
                     Interlocked.Increment(ref goWriteCount);
@@ -485,28 +479,28 @@ namespace exporter
             // 写加载
             loadfuncs.Sort();
             StringBuilder loadcode = new StringBuilder();
-            loadcode.AppendLine("using System;");
-            loadcode.AppendLine("using UnityEngine;");
-            loadcode.AppendLine("using System.Collections;");
-            loadcode.AppendLine("using System.Collections.Generic;");
-            loadcode.AppendLine("\n");
+            loadcode.Append("using System;\r\n");
+            loadcode.Append("using UnityEngine;\r\n");
+            loadcode.Append("using System.Collections;\r\n");
+            loadcode.Append("using System.Collections.Generic;\r\n");
+            loadcode.Append("\r\n");
 
             // 扩展Config类统一获取某个表的实例对象
-            loadcode.AppendLine("public partial class Config {");
+            loadcode.Append("public partial class Config {\r\n");
 
             // load all
-            loadcode.AppendLine("\tpublic static void Load() {");
+            loadcode.Append("\tpublic static void Load() {\r\n");
             foreach (var str in loadfuncs)
-                loadcode.AppendLine("\t" + str + "();");
-            loadcode.AppendLine("}");
+                loadcode.Append("\t" + str + "();\r\n");
+            loadcode.Append("}\r\n");
 
             // clear all
-            loadcode.AppendLine("\tpublic static void Clear() {");
+            loadcode.Append("\tpublic static void Clear() {\r\n");
             foreach (var str in clearfuncs)
-                loadcode.AppendLine("\t" + str + "();");
-            loadcode.AppendLine("}");
+                loadcode.Append("\t" + str + "();\r\n");
+            loadcode.Append("}\r\n");
 
-            loadcode.AppendLine("}");
+            loadcode.Append("}\r\n");
             File.WriteAllText(codeExportDir + "load.cs", loadcode.ToString());
 
             // 格式化go代码
