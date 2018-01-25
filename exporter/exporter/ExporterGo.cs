@@ -8,11 +8,18 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace exporter
 {
     public static partial class Exporter
     {
+		static string FixFloatForGo(string format)
+		{
+			Regex reg = new Regex("^\\d+$");
+			return reg.Replace(format, match => match.Value + ".0");
+		}
+
         static void AppendGoDeclara(ISheet sheet, int col, bool canWrite, StringBuilder sb)
         {
             List<string> declaras = new List<string>();
@@ -92,7 +99,11 @@ namespace exporter
                     {
                         List<CellCoord> about;
                         sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
-                        sb.AppendLine("return " + Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about));
+
+						string content = Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about);
+						//content = FixFloatForGo(content);
+
+                        sb.AppendLine("return " + content);
                         sb.AppendLine("}");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);

@@ -379,7 +379,7 @@ namespace exporter
                         }
 
                         sb.Append("var ids = " + oldDictName + "[" + oldKeyName + "];\r\n");
-                        sb.Append("var configs = new " + configClassName + "[" + oldDictName + ".Count];\r\n");
+                        sb.Append("var configs = new " + configClassName + "[ids.Length];\r\n");
                         sb.Append("for (int i = 0; i < ids.Length; i++) {\r\n");
                         sb.Append("\tvar id = ids[i];\r\n");
                         sb.Append("\tconfigs[i] = Get(id);\r\n");
