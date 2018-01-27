@@ -85,7 +85,7 @@ namespace exporter
                         sb.AppendLine(CodeTemplate.Get("template_func")
                             .Replace("[ROW]", (rownum + 1).ToString())
                             .Replace("[COL]", (colnum + 1).ToString())
-                            .Replace("[CONTENT]", Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about))
+                            .Replace("[CONTENT]", Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about))
                             );
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
@@ -179,6 +179,7 @@ namespace exporter
                     List<string> groupDeclaras = new List<string>();
                     Dictionary<string, List<string>> groupids = new Dictionary<string, List<string>>();
 
+                    data.dataContent.Sort((a, b) => { return (int)a[0] - (int)b[0]; });
                     foreach (var values in data.dataContent)
                     {
                         Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
@@ -215,7 +216,8 @@ namespace exporter
                         }
                     }
 
-
+                    data.ids.Sort();
+                    data.files.Sort();
                     File.WriteAllText(dataDir + data.name.ToLower() + ".lua",
                         CodeTemplate.Get("template_data")
                         .Replace("[EXCEL_FILES]", string.Join(",", data.files))

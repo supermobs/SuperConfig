@@ -8,18 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Text.RegularExpressions;
 
 namespace exporter
 {
     public static partial class Exporter
     {
-		static string FixFloatForGo(string format)
-		{
-			Regex reg = new Regex("^\\d+$");
-			return reg.Replace(format, match => match.Value + ".0");
-		}
-
         static void AppendGoDeclara(ISheet sheet, int col, bool canWrite, StringBuilder sb)
         {
             List<string> declaras = new List<string>();
@@ -99,11 +92,7 @@ namespace exporter
                     {
                         List<CellCoord> about;
                         sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float32 {");
-
-						string content = Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about);
-						//content = FixFloatForGo(content);
-
-                        sb.AppendLine("return " + content);
+                        sb.AppendLine("return " + Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
@@ -230,14 +219,15 @@ namespace exporter
             mapTypeConvert.Add("float32", "string");
 
             int goWriteCount = 0;
-            List<string> loadfuncs = new List<string>();
+            List<string> loadFormulaFuncs = new List<string>();
+            Dictionary<string, string> loadTableFuncs = new Dictionary<string, string>();
 
             // 写公式
             foreach (var formula in formulaContents)
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
-                lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
+                lock (loadFormulaFuncs) loadFormulaFuncs.Add("loadFormula" + formula.Key);
             }
 
             List<string> results = new List<string>();
@@ -253,10 +243,9 @@ namespace exporter
                     sb.AppendLine("package config");
                     sb.AppendLine("import (");
                     sb.AppendLine("\"encoding/json\"");
-                    sb.AppendLine("\"io/ioutil\"");
-                    sb.AppendLine("\"log\"");
                     sb.AppendLine(")");
 
+                    data.files.Sort();
                     sb.AppendLine("// " + string.Join(",", data.files));
                     sb.AppendLine("type " + bigname + "Table struct {");
                     sb.AppendLine("Name string");
@@ -285,14 +274,13 @@ namespace exporter
                     sb.AppendLine("");
 
                     sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
-                    sb.AppendLine("func loadSheet" + bigname + "(){");
-                    lock (loadfuncs) loadfuncs.Add("loadSheet" + bigname);
-                    sb.AppendLine("data, err := ioutil.ReadFile(config_dir+\"" + data.name + ".json\")");
-                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
-                    sb.AppendLine("_" + bigname + "Ins=new(" + bigname + "Table)");
-                    sb.AppendLine("err = json.Unmarshal(data, _" + bigname + "Ins)");
-                    sb.AppendLine("if err != nil { log.Fatal(\"load config " + data.name + ".json\",err) }");
-
+                    sb.AppendLine("func loadSheet" + bigname + "(data []byte) error{");
+                    lock (loadTableFuncs) loadTableFuncs.Add(data.name, "loadSheet" + bigname);
+                    sb.AppendLine("tmp:=new(" + bigname + "Table)");
+                    sb.AppendLine("err := json.Unmarshal(data,tmp)");
+                    sb.AppendLine("if err != nil { return err }");
+                    sb.AppendLine("_" + bigname + "Ins=tmp");
+                    sb.AppendLine("return nil");
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
@@ -325,7 +313,6 @@ namespace exporter
                                 sb.Append("tmp" + (i - 1));
                             sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) + "]; ok {");
                         }
-
 
                         sb.AppendLine("ids:= tmp" + (g.Value.Length - 1));
                         sb.AppendLine("configs := make([]*" + bigname + "Config, len(ids))");
@@ -367,6 +354,7 @@ namespace exporter
 
                     JObject datas = new JObject();
                     config["Datas"] = datas;
+                    data.dataContent.Sort((a, b) => { return (int)a[0] - (int)b[0]; });
                     foreach (var line in data.dataContent)
                     {
                         JObject ll = new JObject();
@@ -422,18 +410,34 @@ namespace exporter
                 Thread.Sleep(10);
 
             // 写加载
-            loadfuncs.Sort();
+
             StringBuilder loadcode = new StringBuilder();
             loadcode.AppendLine("package config");
             loadcode.AppendLine("import (");
             loadcode.AppendLine("\"time\"");
+            loadcode.AppendLine("\"comm\"");
+            loadcode.AppendLine("\"fmt\"");
             loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
             loadcode.AppendLine(")");
+            loadcode.AppendLine("func init(){");
+            loadcode.AppendLine("defer cfg_init_success()");
+            var keys = new List<string>(loadTableFuncs.Keys);
+            keys.Sort();
+            foreach (var key in keys)
+                loadcode.AppendLine("cfg_regisiter(\"" + key + "\", " + loadTableFuncs[key] + ")");
+            loadcode.AppendLine("}");
+            loadcode.AppendLine("");
             loadcode.AppendLine("func Load(){");
             loadcode.AppendLine("start:= time.Now()");
-            foreach (var str in loadfuncs)
+            loadFormulaFuncs.Sort();
+            foreach (var str in loadFormulaFuncs)
                 loadcode.AppendLine(str + "()");
-            loadcode.AppendLine("log.Release(\"config load success use % f s\", float64(time.Now().UnixNano()-start.UnixNano())/1e9)");
+            loadcode.AppendLine();
+            loadcode.AppendLine("ret,err:= LoadConfig(false)");
+            loadcode.AppendLine("if err != nil {");
+            loadcode.AppendLine("log.Fatal(\"%v\", err)");
+            loadcode.AppendLine("}");
+            loadcode.AppendLine("comm.RecountUseTime(start, fmt.Sprintf(\"load config(% v) success!!!\", len(ret)))");
             loadcode.AppendLine("}");
             File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
 

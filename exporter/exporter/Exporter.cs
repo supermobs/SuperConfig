@@ -243,7 +243,7 @@ namespace exporter
                 for (int i = 4; i <= sheet.LastRowNum; i++)
                 {
                     IRow row = sheet.GetRow(i);
-                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0).CellType == CellType.Blank)
+                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0) == null || row.GetCell(0).CellType == CellType.Blank)
                         continue;
 
                     List<object> values = new List<object>();
@@ -352,8 +352,8 @@ namespace exporter
                     }
 
                     int id = (int)values[0];
-                    if (id == 0) // id=0忽略，方便公式生成id
-                        continue;
+                    //if (id == 0) // id=0忽略，方便公式生成id
+                    //    continue;
                     if (id == -1)
                     {
                         id = ++data.autoid;

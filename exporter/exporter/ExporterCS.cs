@@ -115,7 +115,7 @@ namespace exporter
                         List<CellCoord> about;
                         sb.Append("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = ins => {\r\n");
 
-                        string content = Formula2Code.Translate(cell.CellFormula, cell.ToString(), out about);
+                        string content = Formula2Code.Translate(sheet,cell.CellFormula, cell.ToString(), out about);
                         if(CodeTemplate.curlang == CodeTemplate.Langue.CS)
                         {
                             content = FixFloat(content);
@@ -495,6 +495,7 @@ namespace exporter
             loadcode.Append("}\r\n");
 
             // clear all
+            clearfuncs.Sort();
             loadcode.Append("\tpublic static void Clear() {\r\n");
             foreach (var str in clearfuncs)
                 loadcode.Append("\t" + str + "();\r\n");

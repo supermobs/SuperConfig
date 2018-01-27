@@ -1,9 +1,29 @@
 ﻿<Properties StartupConfiguration="{808484AD-D5AA-4CE2-B846-636EA2132576}|Default">
   <MonoDevelop.Ide.Workbench ActiveDocument="exporter/ExporterCS.cs">
     <Files>
-      <File FileName="exporter/ExporterCS.cs" Line="55" Column="9" />
-      <File FileName="exporter/Form1.Designer.cs" Line="183" Column="63" />
+      <File FileName="exporter/ExporterGo.cs" Line="12" Column="18" />
+      <File FileName="exporter/Formula2Code.cs" Line="1" Column="1" />
+      <File FileName="exporter/ExporterCS.cs" Line="102" Column="46" />
     </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="exporter" expanded="True">
+            <Node name="exporter" expanded="True">
+              <Node name="ExporterCS.cs" selected="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+      <Pad Id="ClassPad">
+        <State name="__root__">
+          <Node name="exporter" expanded="True" selected="True" />
+        </State>
+      </Pad>
+      <Pad Id="MonoDevelop.Debugger.WatchPad">
+        <State />
+      </Pad>
+    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
