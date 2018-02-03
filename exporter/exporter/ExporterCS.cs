@@ -457,6 +457,7 @@ namespace exporter
                     }
 
                     StringWriter textWriter = new StringWriter();
+                    textWriter.NewLine = "\r\n";
                     JsonTextWriter jsonWriter = new JsonTextWriter(textWriter)
                     {
                         Formatting = Formatting.Indented,
@@ -464,7 +465,8 @@ namespace exporter
                         IndentChar = ' '
                     };
                     new JsonSerializer().Serialize(jsonWriter, config);
-                    File.WriteAllText(configExportDir + data.name + ".json", textWriter.ToString());
+                    var content = textWriter.ToString();
+                    File.WriteAllText(configExportDir + data.name + ".json", content,new UTF8Encoding(false));
 
                     lock (results)
                         results.Add(string.Empty);
