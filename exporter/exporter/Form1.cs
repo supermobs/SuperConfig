@@ -18,7 +18,10 @@ namespace exporter
         {
             LoadPaths();
 
-            if (args.Length > 0)
+            List<string> argslist = new List<string>(args);
+            Cache.Init(argslist.Contains("cache"));
+
+            if (argslist.Contains("nowindow"))
             {
                 if (Export())
                 {
@@ -27,7 +30,11 @@ namespace exporter
                 Environment.Exit(0);
             }
             else
+            {
                 InitializeComponent();
+                cacheTog.Checked = Cache.enable;
+            }
+
         }
 
         string[] paths = new string[4];
@@ -59,6 +66,7 @@ namespace exporter
             //start = DateTime.Now;
             //CheckError(Exporter.ExportGo(paths[2], paths[3]));
             //MessageBox.Show("导出go文件 " + (DateTime.Now - start).TotalSeconds);
+            //Cache.SaveCache();
             //return true;
 
             CustomWorkbook.Init(paths[0]);
@@ -138,6 +146,7 @@ namespace exporter
                 }
             }
 
+            Cache.Init(cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
                 MessageBox.Show("导出完成" + (DateTime.Now - start).TotalSeconds);

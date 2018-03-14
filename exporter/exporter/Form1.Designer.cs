@@ -37,6 +37,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.cacheTog = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -129,11 +130,22 @@
             this.label4.Text = "请选择excel目录";
             this.label4.Click += new System.EventHandler(this.label_Click);
             // 
+            // cacheTog
+            // 
+            this.cacheTog.AutoSize = true;
+            this.cacheTog.Location = new System.Drawing.Point(22, 247);
+            this.cacheTog.Name = "cacheTog";
+            this.cacheTog.Size = new System.Drawing.Size(72, 16);
+            this.cacheTog.TabIndex = 14;
+            this.cacheTog.Text = "使用缓存";
+            this.cacheTog.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(353, 275);
+            this.Controls.Add(this.cacheTog);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -147,6 +159,7 @@
             this.groupBox3.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -160,6 +173,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.CheckBox cacheTog;
     }
 }
 

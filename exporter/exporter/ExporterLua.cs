@@ -158,19 +158,27 @@ namespace exporter
         {
             // 公式写入文件
             string formulaDir = exportDir + "formula" + Path.DirectorySeparatorChar;
-            if (Directory.Exists(formulaDir)) Directory.Delete(formulaDir, true);
-            Directory.CreateDirectory(formulaDir);
+            if (!Cache.enable)
+            {
+                if (Directory.Exists(formulaDir)) Directory.Delete(formulaDir, true);
+                Directory.CreateDirectory(formulaDir);
+            }
             foreach (var formula in formulaContents)
                 File.WriteAllText(formulaDir + formula.Key.ToLower() + ".lua", formula.Value, new UTF8Encoding(false));
 
             // 数据写入文件
             string dataDir = exportDir + "data" + Path.DirectorySeparatorChar;
-            if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);
-            Directory.CreateDirectory(dataDir);
+            if (!Cache.enable)
+            {
+                if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);
+                Directory.CreateDirectory(dataDir);
+            }
 
             List<string> results = new List<string>();
             foreach (var data in datas.Values)
             {
+                Cache.MarkTableAbout(data.name, data.files);
+
                 ThreadPool.QueueUserWorkItem(ooo =>
                 {
                     List<string> groupDeclaras = new List<string>();
