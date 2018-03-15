@@ -25,6 +25,7 @@ namespace exporter
             {
                 if (Export())
                 {
+                    Cache.SaveCache();
                     Console.WriteLine("Complete");
                 }
                 Environment.Exit(0);
@@ -149,7 +150,10 @@ namespace exporter
             Cache.Init(cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
+            {
+                Cache.SaveCache();
                 MessageBox.Show("导出完成" + (DateTime.Now - start).TotalSeconds);
+            }
         }
 
         private void label_Click(object sender, EventArgs e) { SelectDir(labels.IndexOf((Label)sender)); }
