@@ -276,7 +276,7 @@ namespace exporter
                     sb.Append("using System.Collections;\r\n");
                     sb.Append("using System.Collections.Generic;\r\n");
                     sb.Append("using Newtonsoft.Json;\r\n");
-                    sb.Append("using SuperMobs.Core;\r\n");
+                    sb.Append("using SuperMobs.CoreExport;\r\n");
                     sb.Append("\r\n");
 
                     // 扩展Config类统一获取某个表的实例对象
