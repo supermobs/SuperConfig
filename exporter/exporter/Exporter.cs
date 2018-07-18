@@ -86,7 +86,6 @@ namespace exporter
             public readonly string name;
             public bool isnew = true;
             public List<string> files = new List<string>();
-            public int autoid = 99000000;
 
             public DataStruct(string name)
             {
@@ -361,7 +360,14 @@ namespace exporter
                     //    continue;
                     if (id == -1)
                     {
-                        id = ++data.autoid;
+                        string key = book.fileName + " " + tableName + " ";
+                        for (int iii = 1; iii < values.Count; iii++)
+                            key += values[iii].ToString();
+                        do
+                        {
+                            key += " ";
+                            id = 99000000 + Math.Abs(key.GetHashCode()) % 1000000;
+                        } while (ids.Contains(id));
                         values[0] = id;
                     }
                     if (ids.Contains(id))
