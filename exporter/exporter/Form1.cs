@@ -19,7 +19,11 @@ namespace exporter
             LoadPaths();
 
             List<string> argslist = new List<string>(args);
-            Cache.Init(argslist.Contains("cache"));
+            int labelindex = 0;
+            foreach (string arg in argslist)
+                if (arg.StartsWith("label-"))
+                    labelindex = int.Parse(arg.Substring(6));
+            Cache.Init(labellist[labelindex], argslist.Contains("cache"));
 
             if (argslist.Contains("nowindow"))
             {
@@ -34,17 +38,35 @@ namespace exporter
             {
                 InitializeComponent();
                 cacheTog.Checked = Cache.enable;
+                foreach (string ln in labelNames)
+                    labelSelect.Items.Add(ln);
+                labelSelect.SelectedIndex = 0;
             }
 
         }
 
         string[] paths = new string[4];
+        List<List<string>> labellist = new List<List<string>>();
+        List<string> labelNames = new List<string>();
         string pathConfigFile = "pathconfig";
         void LoadPaths()
         {
             pathConfigFile = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + pathConfigFile;
             if (File.Exists(pathConfigFile))
                 paths = File.ReadAllLines(pathConfigFile);
+
+            labelNames.Add("默认");
+            labellist.Add(new List<string>());
+            string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
+            if (File.Exists(labelcfg))
+            {
+                string[] arr = File.ReadAllLines(labelcfg);
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    labelNames.Add(arr[i]);
+                    labellist.Add(new List<string>(arr[i].Split(':')[2].Split(',')));
+                }
+            }
         }
 
         bool Export()
@@ -147,7 +169,7 @@ namespace exporter
                 }
             }
 
-            Cache.Init(cacheTog.Checked);
+            Cache.Init(labellist[labelSelect.SelectedIndex], cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
             {

@@ -38,15 +38,18 @@
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
             this.cacheTog = new System.Windows.Forms.CheckBox();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.labelSelect = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
+            this.groupBox5.SuspendLayout();
             this.SuspendLayout();
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(266, 244);
+            this.button2.Location = new System.Drawing.Point(266, 320);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 2;
@@ -133,18 +136,37 @@
             // cacheTog
             // 
             this.cacheTog.AutoSize = true;
-            this.cacheTog.Location = new System.Drawing.Point(22, 247);
+            this.cacheTog.Location = new System.Drawing.Point(188, 324);
             this.cacheTog.Name = "cacheTog";
             this.cacheTog.Size = new System.Drawing.Size(72, 16);
             this.cacheTog.TabIndex = 14;
             this.cacheTog.Text = "使用缓存";
             this.cacheTog.UseVisualStyleBackColor = true;
             // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.labelSelect);
+            this.groupBox5.Location = new System.Drawing.Point(14, 244);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(327, 52);
+            this.groupBox5.TabIndex = 14;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "导表标签";
+            // 
+            // labelSelect
+            // 
+            this.labelSelect.FormattingEnabled = true;
+            this.labelSelect.Location = new System.Drawing.Point(8, 21);
+            this.labelSelect.Name = "labelSelect";
+            this.labelSelect.Size = new System.Drawing.Size(313, 20);
+            this.labelSelect.TabIndex = 0;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(353, 275);
+            this.ClientSize = new System.Drawing.Size(353, 351);
+            this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.cacheTog);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
@@ -158,6 +180,7 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
+            this.groupBox5.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -174,6 +197,8 @@
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.CheckBox cacheTog;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.ComboBox labelSelect;
     }
 }
 
