@@ -127,9 +127,11 @@ namespace exporter
                 return string.Empty;
 
             DataStruct data;
-            if (!datas.TryGetValue(tableName, out data))
-                lock (datas)
+            lock (datas)
+            {
+                if (!datas.TryGetValue(tableName, out data))
                     data = new DataStruct(tableName);
+            }
             lock (data)
             {
                 data.files.Add(book.fileName);
@@ -199,7 +201,7 @@ namespace exporter
                         for (int i = 0; i < row.Cells.Count; i++)
                         {
                             ICell cell = row.Cells[i];
-                            if (!string.IsNullOrEmpty(cell.StringCellValue))
+                            if (cell.CellType == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue))
                                 groups.Add(cell.StringCellValue);
                         }
                     }
@@ -393,7 +395,7 @@ namespace exporter
                         }
                         catch (Exception ex)
                         {
-                            error = ex.ToString();
+                            error = sheet.SheetName + ":" + ex.ToString();
                         }
                         lock (results)
                             results.Add(error);
