@@ -60,7 +60,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(315, 32);
             this.label1.TabIndex = 0;
-            this.label1.Text = "请选择excel目录";
+            this.label1.Text = "请选择目录";
             this.label1.Click += new System.EventHandler(this.label_Click);
             // 
             // groupBox1
@@ -89,7 +89,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(315, 32);
             this.label2.TabIndex = 0;
-            this.label2.Text = "请选择excel目录";
+            this.label2.Text = "请选择目录";
             this.label2.Click += new System.EventHandler(this.label_Click);
             // 
             // groupBox3
@@ -108,7 +108,7 @@
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(315, 32);
             this.label3.TabIndex = 0;
-            this.label3.Text = "请选择excel目录";
+            this.label3.Text = "请选择目录";
             this.label3.Click += new System.EventHandler(this.label_Click);
             // 
             // groupBox4
@@ -127,7 +127,7 @@
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(315, 32);
             this.label4.TabIndex = 0;
-            this.label4.Text = "请选择excel目录";
+            this.label4.Text = "请选择目录";
             this.label4.Click += new System.EventHandler(this.label_Click);
             // 
             // cacheTog

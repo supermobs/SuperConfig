@@ -79,7 +79,7 @@ namespace exporter
     {
         static Dictionary<string, string> formulaContents = new Dictionary<string, string>();
 
-        static List<string> dataTypes = new List<string>() { "int", "string", "double", "[]int", "[]string", "[]double" };
+        static List<string> dataTypes = new List<string>() { "int", "string", "double", "float", "float64", "[]int", "[]string", "[]double", "[]float", "[]float64" };
         static Dictionary<string, DataStruct> datas = new Dictionary<string, DataStruct>();
         class DataStruct
         {
@@ -262,6 +262,8 @@ namespace exporter
                                     case "string":
                                         codevalue = cellValue.CellType == CellType.String ? cellValue.StringValue : cellValue.ToString(); break;
                                     case "double":
+                                    case "float":
+                                    case "float64":
                                         codevalue = cellValue.CellType == CellType.Numeric ? cellValue.NumberValue :
                                             cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
                                     default:
@@ -280,6 +282,8 @@ namespace exporter
                                                     codevalue = arr;
                                                     break;
                                                 case "double":
+                                                case "float":
+                                                case "float64":
                                                     double[] vv = new double[arr.Length];
                                                     for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
                                                     codevalue = vv;
@@ -311,6 +315,8 @@ namespace exporter
                                             (ct == CellType.String ? cell.StringCellValue : "");
                                         break;
                                     case "double":
+                                    case "float":
+                                    case "float64":
                                         codevalue = ct == CellType.Numeric ? cell.NumericCellValue :
                                             (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? double.Parse(cell.StringCellValue) : 0);
                                         break;
@@ -330,6 +336,8 @@ namespace exporter
                                                     codevalue = arr;
                                                     break;
                                                 case "double":
+                                                case "float":
+                                                case "float64":
                                                     double[] vv = new double[arr.Length];
                                                     for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
                                                     codevalue = vv;
