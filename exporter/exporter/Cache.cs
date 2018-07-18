@@ -9,6 +9,7 @@ namespace exporter
     {
         public static bool enable { get; private set; }
         public static List<string> labels { get; private set; }
+        public static string dfolder { get; private set; }
         static Dictionary<string, List<string>> file2tables = new Dictionary<string, List<string>>();
         static Dictionary<string, DateTime> cacheTime = new Dictionary<string, DateTime>();
 
@@ -16,7 +17,7 @@ namespace exporter
 
         static string cacheFilePath;
 
-        public static void Init(List<string> _labels, bool _enable)
+        public static void Init(List<string> _labels, string _dfolder, bool _enable)
         {
             cacheFilePath = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "cache";
             foreach (string l in _labels)
@@ -24,6 +25,7 @@ namespace exporter
 
             enable = _enable;
             labels = _labels;
+            dfolder = _dfolder;
             file2tables.Clear();
             cacheTime.Clear();
             table2files.Clear();

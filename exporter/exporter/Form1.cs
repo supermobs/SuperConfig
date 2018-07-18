@@ -23,7 +23,7 @@ namespace exporter
             foreach (string arg in argslist)
                 if (arg.StartsWith("label-"))
                     labelindex = int.Parse(arg.Substring(6));
-            Cache.Init(labellist[labelindex], argslist.Contains("cache"));
+            Cache.Init(labellist[labelindex], labelNames[labelindex].Split(':')[0], argslist.Contains("cache"));
 
             if (argslist.Contains("nowindow"))
             {
@@ -55,7 +55,7 @@ namespace exporter
             if (File.Exists(pathConfigFile))
                 paths = File.ReadAllLines(pathConfigFile);
 
-            labelNames.Add("默认");
+            labelNames.Add("default");
             labellist.Add(new List<string>());
             string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
             if (File.Exists(labelcfg))
@@ -64,7 +64,7 @@ namespace exporter
                 for (int i = 0; i < arr.Length; i++)
                 {
                     labelNames.Add(arr[i]);
-                    labellist.Add(new List<string>(arr[i].Split(':')[2].Split(',')));
+                    labellist.Add(new List<string>(arr[i].Split(':')[1].Split(',')));
                 }
             }
         }
@@ -169,7 +169,7 @@ namespace exporter
                 }
             }
 
-            Cache.Init(labellist[labelSelect.SelectedIndex], cacheTog.Checked);
+            Cache.Init(labellist[labelSelect.SelectedIndex], labelNames[labelSelect.SelectedIndex].Split(':')[0], cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
             {

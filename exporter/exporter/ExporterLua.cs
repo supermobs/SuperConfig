@@ -167,7 +167,7 @@ namespace exporter
                 File.WriteAllText(formulaDir + formula.Key.ToLower() + ".lua", formula.Value, new UTF8Encoding(false));
 
             // 数据写入文件
-            string dataDir = exportDir + "data" + Path.DirectorySeparatorChar;
+            string dataDir = exportDir + "data" + Path.DirectorySeparatorChar + Cache.dfolder + Path.DirectorySeparatorChar;
             if (!Cache.enable)
             {
                 if (Directory.Exists(dataDir)) Directory.Delete(dataDir, true);

@@ -195,6 +195,7 @@ namespace exporter
 
         public static string ExportGo(string codeExportDir, string configExportDir)
         {
+            configExportDir = configExportDir + Path.DirectorySeparatorChar + Cache.dfolder + Path.DirectorySeparatorChar;
             // 目录清理
             if (!Cache.enable)
             {
