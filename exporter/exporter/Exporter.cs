@@ -310,7 +310,7 @@ namespace exporter
                     for (int j = 1; j < cols.Count; j++)
                     {
                         cell = row.GetCell(cols[j]);
-                        if (cell.CellType == CellType.String && cell.StringCellValue == "*")
+                        if (cell != null && cell.CellType == CellType.String && cell.StringCellValue == "*")
                             continue;
                         // 修改内容
                         codevalue = GetCodeValue(sheet, book, cell, types[j], out err);
