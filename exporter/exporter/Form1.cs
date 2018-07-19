@@ -58,14 +58,25 @@ namespace exporter
             labelNames.Add("default");
             labellist.Add(new List<string>());
             string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
+            string[] arr;
             if (File.Exists(labelcfg))
             {
-                string[] arr = File.ReadAllLines(labelcfg);
-                for (int i = 0; i < arr.Length; i++)
-                {
-                    labelNames.Add(arr[i]);
-                    labellist.Add(new List<string>(arr[i].Split(':')[1].Split(',')));
-                }
+                arr = File.ReadAllLines(labelcfg);
+            }
+            else
+            {
+                arr = new string[] { "default" };
+                File.WriteAllLines(labelcfg, arr);
+            }
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                labelNames.Add(arr[i]);
+                string[] ls = arr[i].Split(':');
+                if (ls.Length == 2)
+                    labellist.Add(new List<string>(ls[1].Split(',')));
+                else
+                    labellist.Add(new List<string>());
             }
         }
 
