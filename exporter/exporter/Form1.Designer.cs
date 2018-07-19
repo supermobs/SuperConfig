@@ -40,6 +40,7 @@
             this.cacheTog = new System.Windows.Forms.CheckBox();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.labelSelect = new System.Windows.Forms.ComboBox();
+            this.divfolder = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -161,11 +162,22 @@
             this.labelSelect.Size = new System.Drawing.Size(313, 20);
             this.labelSelect.TabIndex = 0;
             // 
+            // divfolder
+            // 
+            this.divfolder.AutoSize = true;
+            this.divfolder.Location = new System.Drawing.Point(74, 323);
+            this.divfolder.Name = "divfolder";
+            this.divfolder.Size = new System.Drawing.Size(108, 16);
+            this.divfolder.TabIndex = 15;
+            this.divfolder.Text = "导出数据分目录";
+            this.divfolder.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(353, 351);
+            this.Controls.Add(this.divfolder);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.cacheTog);
             this.Controls.Add(this.groupBox4);
@@ -199,6 +211,7 @@
         private System.Windows.Forms.CheckBox cacheTog;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.ComboBox labelSelect;
+        private System.Windows.Forms.CheckBox divfolder;
     }
 }
 

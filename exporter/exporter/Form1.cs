@@ -23,7 +23,7 @@ namespace exporter
             foreach (string arg in argslist)
                 if (arg.StartsWith("label-"))
                     labelindex = int.Parse(arg.Substring(6));
-            Cache.Init(labellist[labelindex], labelNames[labelindex].Split(':')[0], argslist.Contains("cache"));
+            Cache.Init(labellist[labelindex], argslist.Contains("divfloder") ? labelNames[labelindex].Split(':')[0] : "", argslist.Contains("cache"));
 
             if (argslist.Contains("nowindow"))
             {
@@ -55,8 +55,6 @@ namespace exporter
             if (File.Exists(pathConfigFile))
                 paths = File.ReadAllLines(pathConfigFile);
 
-            labelNames.Add("default");
-            labellist.Add(new List<string>());
             string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
             string[] arr;
             if (File.Exists(labelcfg))
@@ -180,7 +178,7 @@ namespace exporter
                 }
             }
 
-            Cache.Init(labellist[labelSelect.SelectedIndex], labelNames[labelSelect.SelectedIndex].Split(':')[0], cacheTog.Checked);
+            Cache.Init(labellist[labelSelect.SelectedIndex], divfolder.Checked ? labelNames[labelSelect.SelectedIndex].Split(':')[0] : "", cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
             {
