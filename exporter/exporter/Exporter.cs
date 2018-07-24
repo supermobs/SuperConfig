@@ -305,6 +305,8 @@ namespace exporter
                     if (!string.IsNullOrEmpty(err))
                         return err;
                     int id = (int)codevalue;
+                    if (data.dataLabelModifys[labelindex].ContainsKey(id))
+                        return "id冲突，表名" + sheet.SheetName + ",id=" + id;
                     data.dataLabelModifys[labelindex].Add(id, new Dictionary<int, object>());
 
                     for (int j = 1; j < cols.Count; j++)
