@@ -33,7 +33,7 @@ namespace exporter
             {
                 fileName = file.Name;
 
-                FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+                FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 // 表的格式
                 if (file.Extension == ".xlsx")
