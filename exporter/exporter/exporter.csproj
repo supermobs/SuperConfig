@@ -68,6 +68,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cache.cs" />
     <Compile Include="CodeTemplate.cs" />
     <Compile Include="CustomWorkbook.cs" />
     <Compile Include="ExcelFormulaGrammar.cs" />

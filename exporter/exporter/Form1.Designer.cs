@@ -37,16 +37,22 @@
             this.label3 = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
-			this.groupBox5 = new System.Windows.Forms.GroupBox();
-			this.label5 = new System.Windows.Forms.Label();
-			this.groupBox6 = new System.Windows.Forms.GroupBox();
-			this.label6 = new System.Windows.Forms.Label();
+            this.cacheTog = new System.Windows.Forms.CheckBox();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.labelSelect = new System.Windows.Forms.ComboBox();
+            this.divfolder = new System.Windows.Forms.CheckBox();
+
+            this.groupBox_cs = new System.Windows.Forms.GroupBox();
+			this.label_cs = new System.Windows.Forms.Label();
+			this.groupBox_cscfg = new System.Windows.Forms.GroupBox();
+			this.label_cscfg = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox5.SuspendLayout();
-            this.groupBox6.SuspendLayout();
+            this.groupBox_cs.SuspendLayout();
+            this.groupBox_cscfg.SuspendLayout();
             this.SuspendLayout();
             // 
             // button2
@@ -135,54 +141,95 @@
             this.label4.Text = "select folder"; // 请选择excel目录
             this.label4.Click += new System.EventHandler(this.label_Click);
 
-			// 
-			// groupBox5
-			// 
-			this.groupBox5.Controls.Add(this.label5);
-			this.groupBox5.Location = new System.Drawing.Point(14, 244);
-			this.groupBox5.Name = "groupBox5";
-			this.groupBox5.Size = new System.Drawing.Size(327, 52);
-			this.groupBox5.TabIndex = 14;
-			this.groupBox5.TabStop = false;
-			this.groupBox5.Text = "c# script output"; // c# code
-		    // 
-            // label5
             // 
-			this.label5.Location = new System.Drawing.Point(6, 17);
-			this.label5.Name = "label5";
-			this.label5.Size = new System.Drawing.Size(315, 32);
-			this.label5.TabIndex = 0;
-			this.label5.Text = "select folder"; // 请选择excel目录
-			this.label5.Click += new System.EventHandler(this.label_Click);
+			// groupBox_cs
+			// 
+			this.groupBox_cs.Controls.Add(this.label_cs);
+			this.groupBox_cs.Location = new System.Drawing.Point(14, 244);
+			this.groupBox_cs.Name = "groupBox_cs";
+			this.groupBox_cs.Size = new System.Drawing.Size(327, 52);
+			this.groupBox_cs.TabIndex = 14;
+			this.groupBox_cs.TabStop = false;
+			this.groupBox_cs.Text = "c# script output"; // c# code
+			// 
+            // label_cs
+            // 
+			this.label_cs.Location = new System.Drawing.Point(6, 17);
+			this.label_cs.Name = "label_cs";
+			this.label_cs.Size = new System.Drawing.Size(315, 32);
+			this.label_cs.TabIndex = 0;
+			this.label_cs.Text = "select folder"; // 请选择excel目录
+			this.label_cs.Click += new System.EventHandler(this.label_Click);
 
 			// 
-			// groupBox6
+			// groupBox_cscfg
 			// 
-			this.groupBox6.Controls.Add(this.label6);
-            this.groupBox6.Location = new System.Drawing.Point(14, 302);
-            this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(327, 52);
-            this.groupBox6.TabIndex = 15;
-            this.groupBox6.TabStop = false;
-            this.groupBox6.Text = "c# config output"; // c# config
-															 // 
-															 // label5
-															 // 
-			this.label6.Location = new System.Drawing.Point(6, 17);
-			this.label6.Name = "label6";
-			this.label6.Size = new System.Drawing.Size(315, 32);
-			this.label6.TabIndex = 0;
-			this.label6.Text = "select folder"; // 请选择excel目录
-			this.label6.Click += new System.EventHandler(this.label_Click);
-
+			this.groupBox_cscfg.Controls.Add(this.label_cscfg);
+            this.groupBox_cscfg.Location = new System.Drawing.Point(14, 302);
+            this.groupBox_cscfg.Name = "groupBox_cscfg";
+            this.groupBox_cscfg.Size = new System.Drawing.Size(327, 52);
+            this.groupBox_cscfg.TabIndex = 15;
+            this.groupBox_cscfg.TabStop = false;
+            this.groupBox_cscfg.Text = "c# config output"; // c# config
+            // 
+			// label_cscfg
+			// 
+			this.label_cscfg.Location = new System.Drawing.Point(6, 17);
+			this.label_cscfg.Name = "label_cscfg";
+			this.label_cscfg.Size = new System.Drawing.Size(315, 32);
+			this.label_cscfg.TabIndex = 0;
+			this.label_cscfg.Text = "select folder"; // 请选择excel目录
+			this.label_cscfg.Click += new System.EventHandler(this.label_Click);
+			
+            // 
+            // cacheTog
+            // 
+            this.cacheTog.AutoSize = true;
+            this.cacheTog.Location = new System.Drawing.Point(188, 324);
+            this.cacheTog.Name = "cacheTog";
+            this.cacheTog.Size = new System.Drawing.Size(72, 16);
+            this.cacheTog.TabIndex = 14;
+            this.cacheTog.Text = "use cached";
+            this.cacheTog.UseVisualStyleBackColor = true;
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.labelSelect);
+            this.groupBox5.Location = new System.Drawing.Point(14, 244);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(327, 52);
+            this.groupBox5.TabIndex = 14;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "output label"; //导表标签
+            // 
+            // labelSelect
+            // 
+            this.labelSelect.FormattingEnabled = true;
+            this.labelSelect.Location = new System.Drawing.Point(8, 21);
+            this.labelSelect.Name = "labelSelect";
+            this.labelSelect.Size = new System.Drawing.Size(313, 20);
+            this.labelSelect.TabIndex = 0;
+            // 
+            // divfolder
+            // 
+            this.divfolder.AutoSize = true;
+            this.divfolder.Location = new System.Drawing.Point(74, 323);
+            this.divfolder.Name = "divfolder";
+            this.divfolder.Size = new System.Drawing.Size(108, 16);
+            this.divfolder.TabIndex = 15;
+            this.divfolder.Text = "output divfolder"; //导出数据分目录
+            this.divfolder.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(353, 392);
-			this.Controls.Add(this.groupBox6);
-			this.Controls.Add(this.groupBox5);
+            this.ClientSize = new System.Drawing.Size(353, 351);
+            this.Controls.Add(this.divfolder);
+            this.Controls.Add(this.groupBox5);
+            this.Controls.Add(this.cacheTog);
+            this.Controls.Add(this.groupBox_cscfg);
+			this.Controls.Add(this.groupBox_cs);
             this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -196,8 +243,10 @@
             this.groupBox3.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
             this.groupBox5.ResumeLayout(false);
-            this.groupBox6.ResumeLayout(false);
+            this.groupBox_cs.ResumeLayout(false);
+            this.groupBox_cscfg.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -211,10 +260,14 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.Label label4;
-		private System.Windows.Forms.GroupBox groupBox5;
-		private System.Windows.Forms.Label label5;
-		private System.Windows.Forms.GroupBox groupBox6;
-		private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.GroupBox groupBox_cs;
+        private System.Windows.Forms.Label label_cs;
+        private System.Windows.Forms.GroupBox groupBox_cscfg;
+        private System.Windows.Forms.Label label_cscfg;
+        private System.Windows.Forms.CheckBox cacheTog;
+        private System.Windows.Forms.GroupBox groupBox5;
+        private System.Windows.Forms.ComboBox labelSelect;
+        private System.Windows.Forms.CheckBox divfolder;
     }
 }
 

@@ -195,28 +195,37 @@ namespace exporter
 
         public static string ExportGo(string codeExportDir, string configExportDir)
         {
+            configExportDir = configExportDir + Path.DirectorySeparatorChar + Cache.dfolder + Path.DirectorySeparatorChar;
             // 目录清理
-            if (Directory.Exists(configExportDir))
-                new DirectoryInfo(configExportDir).GetFiles().ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
-            else
-                Directory.CreateDirectory(configExportDir);
-            if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
-            new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
-            new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            if (!Cache.enable)
+            {
+                if (Directory.Exists(configExportDir))
+                    new DirectoryInfo(configExportDir).GetFiles().ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+                else
+                    Directory.CreateDirectory(configExportDir);
+                if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
+                new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+                new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+            }
 
             // 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
             typeconvert.Add("int", "int32");
             typeconvert.Add("string", "string");
             typeconvert.Add("double", "float32");
+            typeconvert.Add("float", "float32");
+            typeconvert.Add("float64", "float64");
             typeconvert.Add("[]int", "[]int32");
             typeconvert.Add("[]string", "[]string");
             typeconvert.Add("[]double", "[]float32");
+            typeconvert.Add("[]float", "[]float32");
+            typeconvert.Add("[]float64", "[]float64");
             // 索引类型转换
             Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
             mapTypeConvert.Add("int32", "int32");
             mapTypeConvert.Add("string", "string");
             mapTypeConvert.Add("float32", "string");
+            mapTypeConvert.Add("float64", "string");
 
             int goWriteCount = 0;
             List<string> loadFormulaFuncs = new List<string>();
@@ -390,7 +399,6 @@ namespace exporter
                     }
 
                     StringWriter textWriter = new StringWriter();
-                    textWriter.NewLine = "\r\n";
                     JsonTextWriter jsonWriter = new JsonTextWriter(textWriter)
                     {
                         Formatting = Formatting.Indented,
@@ -398,7 +406,7 @@ namespace exporter
                         IndentChar = ' '
                     };
                     new JsonSerializer().Serialize(jsonWriter, config);
-                    File.WriteAllText(configExportDir + data.name + ".json", textWriter.ToString(), new UTF8Encoding(false));
+                    File.WriteAllText(configExportDir + data.name + ".json", textWriter.ToString());
 
                     lock (results)
                         results.Add(string.Empty);
@@ -411,36 +419,38 @@ namespace exporter
                 Thread.Sleep(10);
 
             // 写加载
-
-            StringBuilder loadcode = new StringBuilder();
-            loadcode.AppendLine("package config");
-            loadcode.AppendLine("import (");
-            loadcode.AppendLine("\"time\"");
-            loadcode.AppendLine("\"comm\"");
-            loadcode.AppendLine("\"fmt\"");
-            loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
-            loadcode.AppendLine(")");
-            loadcode.AppendLine("func init(){");
-            loadcode.AppendLine("defer cfg_init_success()");
-            var keys = new List<string>(loadTableFuncs.Keys);
-            keys.Sort();
-            foreach (var key in keys)
-                loadcode.AppendLine("cfg_regisiter(\"" + key + "\", " + loadTableFuncs[key] + ")");
-            loadcode.AppendLine("}");
-            loadcode.AppendLine("");
-            loadcode.AppendLine("func Load(){");
-            loadcode.AppendLine("start:= time.Now()");
-            loadFormulaFuncs.Sort();
-            foreach (var str in loadFormulaFuncs)
-                loadcode.AppendLine(str + "()");
-            loadcode.AppendLine();
-            loadcode.AppendLine("ret,err:= LoadConfig(false)");
-            loadcode.AppendLine("if err != nil {");
-            loadcode.AppendLine("log.Fatal(\"%v\", err)");
-            loadcode.AppendLine("}");
-            loadcode.AppendLine("comm.RecountUseTime(start, fmt.Sprintf(\"load config(% v) success!!!\", len(ret)))");
-            loadcode.AppendLine("}");
-            File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
+            if (!Cache.enable)
+            {
+                StringBuilder loadcode = new StringBuilder();
+                loadcode.AppendLine("package config");
+                loadcode.AppendLine("import (");
+                loadcode.AppendLine("\"time\"");
+                loadcode.AppendLine("\"comm\"");
+                loadcode.AppendLine("\"fmt\"");
+                loadcode.AppendLine("\"github.com/name5566/leaf/log\"");
+                loadcode.AppendLine(")");
+                loadcode.AppendLine("func init(){");
+                loadcode.AppendLine("defer cfg_init_success()");
+                var keys = new List<string>(loadTableFuncs.Keys);
+                keys.Sort();
+                foreach (var key in keys)
+                    loadcode.AppendLine("cfg_regisiter(\"" + key + "\", " + loadTableFuncs[key] + ")");
+                loadcode.AppendLine("}");
+                loadcode.AppendLine("");
+                loadcode.AppendLine("func Load(){");
+                loadcode.AppendLine("start:= time.Now()");
+                loadFormulaFuncs.Sort();
+                foreach (var str in loadFormulaFuncs)
+                    loadcode.AppendLine(str + "()");
+                loadcode.AppendLine();
+                loadcode.AppendLine("ret,err:= LoadConfig(false)");
+                loadcode.AppendLine("if err != nil {");
+                loadcode.AppendLine("log.Fatal(\"%v\", err)");
+                loadcode.AppendLine("}");
+                loadcode.AppendLine("comm.RecountUseTime(start, fmt.Sprintf(\"load config(% v) success!!!\", len(ret)))");
+                loadcode.AppendLine("}");
+                File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
+            }
 
             // 格式化go代码
             ProcessStartInfo info = new ProcessStartInfo();

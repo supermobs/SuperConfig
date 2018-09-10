@@ -43,12 +43,7 @@ namespace exporter
                     {
                         string[] arr = link.LinkedFileName.Split('/');
                         if (arr.Length > 1)
-                        {
                             link.LinkedFileName = arr[arr.Length - 1];
-                            fs.Close();
-                            fs = new FileStream(file.FullName, FileMode.Create);
-                            book.Write(fs);
-                        }
                     }
                     workbook = book;
                     evaluator = new XSSFFormulaEvaluator(workbook);
@@ -97,12 +92,20 @@ namespace exporter
                 evaluateSheets = new List<string>(File.ReadAllLines(evaConfPath));
 
             // 遍历导出目录
+            List<string> readfiles = new List<string>();
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
                 if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls"))
                     continue;
-
-                // 这里会算这个表的信息
+                foreach (var fname in Cache.GetNoCacheAbout(file))
+                {
+                    if (!readfiles.Contains(fname))
+                        readfiles.Add(fname);
+                }
+            }
+            foreach (var fname in readfiles)
+            {
+                var file = new FileInfo(excelpath + "/" + fname);
                 CustomWorkbook book = new CustomWorkbook(file);
                 book.type = CustomWorkbookType.Export;
                 totalCount++;
@@ -128,6 +131,9 @@ namespace exporter
             // 设置公式环境
             foreach (var book in allBooks)
                 book.evaluator.SetupReferencedWorkbooks(evaluatorEnv);
+
+
+            Cache.PrepareToExport();
         }
     }
 }

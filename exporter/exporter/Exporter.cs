@@ -79,19 +79,22 @@ namespace exporter
     {
         static Dictionary<string, string> formulaContents = new Dictionary<string, string>();
 
-        static List<string> dataTypes = new List<string>() { "int", "string", "double", "[]int", "[]string", "[]double" };
+        static List<string> dataTypes = new List<string>() { "int", "string", "double", "float", "float64", "[]int", "[]string", "[]double", "[]float", "[]float64" };
         static Dictionary<string, DataStruct> datas = new Dictionary<string, DataStruct>();
         class DataStruct
         {
             public readonly string name;
             public bool isnew = true;
+            public int labelindex = 0;
             public List<string> files = new List<string>();
-            public int autoid = 99000000;
 
             public DataStruct(string name)
             {
                 this.name = name;
                 datas.Add(name, this);
+                dataLabelModifys = new Dictionary<int, Dictionary<int, object>>[Cache.labels.Count];
+                for (int i = 0; i < Cache.labels.Count; i++)
+                    dataLabelModifys[i] = new Dictionary<int, Dictionary<int, object>>();
             }
 
             public List<string> keys = new List<string>();
@@ -103,6 +106,25 @@ namespace exporter
 
             public List<int> ids = new List<int>();
             public List<List<object>> dataContent = new List<List<object>>();
+            public Dictionary<int, Dictionary<int, object>>[] dataLabelModifys;
+
+            public string ApplyModify()
+            {
+                for (int i = 0; i < Cache.labels.Count; i++)
+                {
+                    var dm = dataLabelModifys[i];
+                    var e = dm.GetEnumerator();
+                    while (e.MoveNext())
+                    {
+                        var dindex = ids.IndexOf(e.Current.Key);
+                        if (dindex < 0)
+                            return name + "表的" + Cache.labels[i] + "标签表，有一个主表不存在的id，id=" + e.Current.Key;
+                        foreach (var p in e.Current.Value)
+                            dataContent[dindex][p.Key] = p.Value;
+                    }
+                }
+                return string.Empty;
+            }
         }
 
         static void Compare(List<string> a, List<string> b, string msg)
@@ -120,21 +142,204 @@ namespace exporter
                     throw new Exception(msg);
         }
 
-        /// <summary>
-        /// 处理每一张表的数据,在一个文件里面
-        /// 如果一个列前缀_则过滤掉
-        /// </summary>
+        static object GetCodeValue(ISheet sheet, CustomWorkbook book, ICell cell, string type, out string error)
+        {
+            error = string.Empty;
+            try
+            {
+                object codevalue = null;
+                if (CustomWorkbook.evaluateSheets.Contains(sheet.SheetName) && cell != null && cell.CellType == CellType.Formula)
+                {
+                    book.evaluator.DebugEvaluationOutputForNextEval = true;
+                    CellValue cellValue = book.evaluator.Evaluate(cell);
+                    switch (type)
+                    {
+                        case "int":
+                            codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt32(cellValue.NumberValue) :
+                                cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
+                        case "string":
+                            codevalue = cellValue.CellType == CellType.String ? cellValue.StringValue : cellValue.ToString(); break;
+                        case "double":
+                        case "float":
+                        case "float64":
+                            codevalue = cellValue.CellType == CellType.Numeric ? cellValue.NumberValue :
+                                cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
+                        default:
+                            if (type.StartsWith("[]"))
+                            {
+                                string[] arr = (cellValue.CellType == CellType.Numeric ? cellValue.NumberValue.ToString() : (cellValue.CellType == CellType.String ? cellValue.StringValue : "")).Split('|');
+                                if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
+                                switch (type.Substring(2))
+                                {
+                                    case "int":
+                                        int[] v = new int[arr.Length];
+                                        for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
+                                        codevalue = v;
+                                        break;
+                                    case "string":
+                                        codevalue = arr;
+                                        break;
+                                    case "double":
+                                    case "float":
+                                    case "float64":
+                                        double[] vv = new double[arr.Length];
+                                        for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
+                                        codevalue = vv;
+                                        break;
+                                }
+                            }
+                            break;
+                    }
+                }
+                else
+                {
+                    CellType ct = CellType.Blank;
+                    if (cell != null)
+                    {
+                        if (cell.CellType == CellType.Formula)
+                            ct = cell.CachedFormulaResultType;
+                        else
+                            ct = cell.CellType;
+                    }
+
+                    switch (type)
+                    {
+                        case "int":
+                            codevalue = ct == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
+                                (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? int.Parse(cell.StringCellValue) : 0);
+                            break;
+                        case "string":
+                            codevalue = ct == CellType.Numeric ? cell.NumericCellValue.ToString() :
+                                (ct == CellType.String ? cell.StringCellValue : "");
+                            break;
+                        case "double":
+                        case "float":
+                        case "float64":
+                            codevalue = ct == CellType.Numeric ? cell.NumericCellValue :
+                                (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? double.Parse(cell.StringCellValue) : 0);
+                            break;
+                        default:
+                            if (type.StartsWith("[]"))
+                            {
+                                string[] arr = (ct == CellType.Numeric ? cell.NumericCellValue.ToString() : (ct == CellType.String ? cell.StringCellValue : "")).Split('|');
+                                if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
+                                switch (type.Substring(2))
+                                {
+                                    case "int":
+                                        int[] v = new int[arr.Length];
+                                        for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
+                                        codevalue = v;
+                                        break;
+                                    case "string":
+                                        codevalue = arr;
+                                        break;
+                                    case "double":
+                                    case "float":
+                                    case "float64":
+                                        double[] vv = new double[arr.Length];
+                                        for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
+                                        codevalue = vv;
+                                        break;
+                                }
+                            }
+                            break;
+                    }
+                }
+                return codevalue;
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex);
+                error = "数据格式有误， 第" + (cell.RowIndex + 1) + "行第" + (cell.ColumnIndex + 1) + "列， SheetName = " + sheet.SheetName + "，FileNames = " + book.fileName;
+                return null;
+            }
+        }
+
+        static string DealWithDataLabelSheet(ISheet sheet, CustomWorkbook book)
+        {
+            string[] larr = sheet.SheetName.Split('_');
+            string tableName = sheet.SheetName.Substring(0, sheet.SheetName.LastIndexOf('_'));
+            int labelindex = Cache.labels.IndexOf(larr[larr.Length - 1]);
+            // 不要这个标签的内容
+            if (labelindex < 0)
+                return string.Empty;
+
+            // 等待原始数据导出
+            DataStruct data;
+            while (!datas.TryGetValue(tableName, out data))
+                Thread.Sleep(TimeSpan.FromSeconds(0.1));
+
+            lock (data)
+            {
+                // 标签表头
+                IRow engRow = sheet.GetRow(1);
+                IRow tRow = sheet.GetRow(3);
+                List<int> keyindexs = new List<int>();
+                List<int> cols = new List<int>();
+                List<string> types = new List<string>();
+                for (int i = 0; i < engRow.LastCellNum; i++)
+                {
+                    if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String || string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
+                        continue;
+                    string key = engRow.GetCell(i).StringCellValue;
+                    int keyindex = data.keys.IndexOf(key);
+                    if (keyindex < 0)
+                        continue;
+                    keyindexs.Add(keyindex);
+                    string type = (tRow == null || tRow.GetCell(i) == null) ? " " : tRow.GetCell(i).StringCellValue;
+                    types.Add(type);
+                    if (!dataTypes.Contains(type))
+                        return "未知的数据类型" + type + "，SheetName = " + tableName + "，FileName = " + book.fileName;
+                    cols.Add(i);
+                }
+
+                for (int i = 4; i <= sheet.LastRowNum; i++)
+                {
+                    IRow row = sheet.GetRow(i);
+                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0) == null || row.GetCell(0).CellType == CellType.Blank)
+                        continue;
+
+                    ICell cell = row.GetCell(cols[0]);
+                    string err;
+                    object codevalue = GetCodeValue(sheet, book, cell, types[0], out err);
+                    if (!string.IsNullOrEmpty(err))
+                        return err;
+                    int id = (int)codevalue;
+                    if (data.dataLabelModifys[labelindex].ContainsKey(id))
+                        return "id冲突，表名" + sheet.SheetName + ",id=" + id;
+                    data.dataLabelModifys[labelindex].Add(id, new Dictionary<int, object>());
+
+                    for (int j = 1; j < cols.Count; j++)
+                    {
+                        cell = row.GetCell(cols[j]);
+                        if (cell != null && cell.CellType == CellType.String && cell.StringCellValue == "*")
+                            continue;
+                        // 修改内容
+                        codevalue = GetCodeValue(sheet, book, cell, types[j], out err);
+                        if (!string.IsNullOrEmpty(err))
+                            return err;
+                        data.dataLabelModifys[labelindex][id].Add(keyindexs[j], codevalue);
+                    }
+                }
+            }
+            return string.Empty;
+        }
+
         static string DealWithDataSheet(ISheet sheet, CustomWorkbook book)
         {
             string tableName = sheet.SheetName;
-
             if (tableName.StartsWith("_"))
                 return string.Empty;
+            string[] larr = tableName.Split('_');
+            if (larr[larr.Length - 1] == larr[larr.Length - 1].ToUpper())
+                return DealWithDataLabelSheet(sheet, book);
 
             DataStruct data;
-            if (!datas.TryGetValue(tableName, out data))
-                lock (datas)
+            lock (datas)
+            {
+                if (!datas.TryGetValue(tableName, out data))
                     data = new DataStruct(tableName);
+            }
             lock (data)
             {
                 data.files.Add(book.fileName);
@@ -204,7 +409,7 @@ namespace exporter
                         for (int i = 0; i < row.Cells.Count; i++)
                         {
                             ICell cell = row.Cells[i];
-                            if (!string.IsNullOrEmpty(cell.StringCellValue))
+                            if (cell.CellType == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue))
                                 groups.Add(cell.StringCellValue);
                         }
                     }
@@ -250,105 +455,11 @@ namespace exporter
                     for (int j = 0; j < data.cols.Count; j++)
                     {
                         ICell cell = row.GetCell(data.cols[j]);
-                        try
-                        {
-                            object codevalue = null;
-                            if (CustomWorkbook.evaluateSheets.Contains(sheet.SheetName) && cell != null && cell.CellType == CellType.Formula)
-                            {
-                                book.evaluator.DebugEvaluationOutputForNextEval = true;
-                                CellValue cellValue = book.evaluator.Evaluate(cell);
-                                switch (data.types[j])
-                                {
-                                    case "int":
-                                        codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt32(cellValue.NumberValue) :
-                                            cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
-                                    case "string":
-                                        codevalue = cellValue.CellType == CellType.String ? cellValue.StringValue : cellValue.ToString(); break;
-                                    case "double":
-                                        codevalue = cellValue.CellType == CellType.Numeric ? cellValue.NumberValue :
-                                            cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
-                                    default:
-                                        if (data.types[j].StartsWith("[]"))
-                                        {
-                                            string[] arr = (cellValue.CellType == CellType.Numeric ? cellValue.NumberValue.ToString() : (cellValue.CellType == CellType.String ? cellValue.StringValue : "")).Split('|');
-                                            if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
-                                            switch (data.types[j].Substring(2))
-                                            {
-                                                case "int":
-                                                    int[] v = new int[arr.Length];
-                                                    for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
-                                                    codevalue = v;
-                                                    break;
-                                                case "string":
-                                                    codevalue = arr;
-                                                    break;
-                                                case "double":
-                                                    double[] vv = new double[arr.Length];
-                                                    for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
-                                                    codevalue = vv;
-                                                    break;
-                                            }
-                                        }
-                                        break;
-                                }
-                            }
-                            else
-                            {
-                                CellType ct = CellType.Blank;
-                                if (cell != null)
-                                {
-                                    if (cell.CellType == CellType.Formula)
-                                        ct = cell.CachedFormulaResultType;
-                                    else
-                                        ct = cell.CellType;
-                                }
-
-                                switch (data.types[j])
-                                {
-                                    case "int":
-                                        codevalue = ct == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
-                                            (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? int.Parse(cell.StringCellValue) : 0);
-                                        break;
-                                    case "string":
-                                        codevalue = ct == CellType.Numeric ? cell.NumericCellValue.ToString() :
-                                            (ct == CellType.String ? cell.StringCellValue : "");
-                                        break;
-                                    case "double":
-                                        codevalue = ct == CellType.Numeric ? cell.NumericCellValue :
-                                            (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? double.Parse(cell.StringCellValue) : 0);
-                                        break;
-                                    default:
-                                        if (data.types[j].StartsWith("[]"))
-                                        {
-                                            string[] arr = (ct == CellType.Numeric ? cell.NumericCellValue.ToString() : (ct == CellType.String ? cell.StringCellValue : "")).Split('|');
-                                            if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
-                                            switch (data.types[j].Substring(2))
-                                            {
-                                                case "int":
-                                                    int[] v = new int[arr.Length];
-                                                    for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
-                                                    codevalue = v;
-                                                    break;
-                                                case "string":
-                                                    codevalue = arr;
-                                                    break;
-                                                case "double":
-                                                    double[] vv = new double[arr.Length];
-                                                    for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
-                                                    codevalue = vv;
-                                                    break;
-                                            }
-                                        }
-                                        break;
-                                }
-                            }
-                            values.Add(codevalue);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.Write(ex);
-                            return "数据格式有误， 第" + (cell.RowIndex + 1) + "行第" + (cell.ColumnIndex + 1) + "列， SheetName = " + tableName + "，FileNames = " + book.fileName;
-                        }
+                        string err;
+                        object codevalue = GetCodeValue(sheet, book, cell, data.types[j], out err);
+                        if (!string.IsNullOrEmpty(err))
+                            return err;
+                        values.Add(codevalue);
                     }
 
                     int id = (int)values[0];
@@ -356,15 +467,32 @@ namespace exporter
                     //    continue;
                     if (id == -1)
                     {
-                        id = ++data.autoid;
+                        string key = book.fileName + " " + tableName + " ";
+                        for (int iii = 1; iii < values.Count; iii++)
+                            key += values[iii].ToString();
+                        do
+                        {
+                            key += " ";
+                            id = 99000000 + Math.Abs(key.GetHashCode()) % 1000000;
+                        } while (ids.Contains(id));
                         values[0] = id;
                     }
                     if (ids.Contains(id))
                         return "索引冲突 [" + values[0] + "]，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
-                    // 添加id
-                    ids.Add((int)values[0]);
-                    // 添加数据
-                    dataContent.Add(values);
+
+                    bool useful = true;
+                    var idcell = row.GetCell(data.cols[0]);
+                    IComment idcom = null;
+                    while (true) { try { idcom = idcell.CellComment; break; } catch { } }
+                    if (idcom != null)
+                        useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
+                    if (useful)
+                    {
+                        // 添加id
+                        ids.Add((int)values[0]);
+                        // 添加数据
+                        dataContent.Add(values);
+                    }
                 }
 
                 data.isnew = false;
@@ -372,10 +500,6 @@ namespace exporter
             }
         }
 
-        /// <summary>
-        /// 当读取完所有的books后进行处理
-        /// 只针对需要导出的表,引用不处理数据
-        /// </summary>
         public static string ReadDataXlsx()
         {
             datas = new Dictionary<string, DataStruct>();
@@ -393,7 +517,6 @@ namespace exporter
                     ISheet sheet = book.workbook.GetSheetAt(i);
                     if (sheet.SheetName.StartsWith("(F)") || sheet.SheetName.StartsWith("_"))
                         continue;
-
                     ThreadPool.QueueUserWorkItem(o =>
                     {
                         string error;
@@ -403,7 +526,7 @@ namespace exporter
                         }
                         catch (Exception ex)
                         {
-                            error = ex.ToString();
+                            error = sheet.SheetName + ":" + ex.ToString();
                         }
                         lock (results)
                             results.Add(error);
@@ -419,10 +542,18 @@ namespace exporter
                 if (!string.IsNullOrEmpty(error))
                     return error;
 
+            // 应用标签修改
+            var enumerator = datas.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                string err = enumerator.Current.Value.ApplyModify();
+                if (!string.IsNullOrEmpty(err))
+                    return err;
+            }
+
             return string.Empty;
         }
 
-        // 读取公式,公式处理方法可以委托,不同语言
         public static string ReadFormulaXlsx(Func<ISheet, string> deal)
         {
             formulaContents = new Dictionary<string, string>();

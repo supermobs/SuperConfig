@@ -18,19 +18,36 @@ namespace exporter
         {
             LoadPaths();
 
-            if (args.Length > 0)
+            List<string> argslist = new List<string>(args);
+            int labelindex = 0;
+            foreach (string arg in argslist)
+                if (arg.StartsWith("label-"))
+                    labelindex = int.Parse(arg.Substring(6));
+            Cache.Init(labellist[labelindex], argslist.Contains("divfloder") ? labelNames[labelindex].Split(':')[0] : "", argslist.Contains("cache"));
+
+            if (argslist.Contains("nowindow"))
             {
                 if (Export())
                 {
+                    Cache.SaveCache();
                     Console.WriteLine("Complete");
                 }
                 Environment.Exit(0);
             }
             else
+            {
                 InitializeComponent();
+                cacheTog.Checked = Cache.enable;
+                foreach (string ln in labelNames)
+                    labelSelect.Items.Add(ln);
+                labelSelect.SelectedIndex = 0;
+            }
+
         }
 
         string[] paths = new string[6];
+        List<List<string>> labellist = new List<List<string>>();
+        List<string> labelNames = new List<string>();
         string pathConfigFile = "pathconfig";
 
         void LoadPaths()
@@ -39,6 +56,28 @@ namespace exporter
 
             if (File.Exists(pathConfigFile))
                 paths = File.ReadAllLines(pathConfigFile);
+
+            string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
+            string[] arr;
+            if (File.Exists(labelcfg))
+            {
+                arr = File.ReadAllLines(labelcfg);
+            }
+            else
+            {
+                arr = new string[] { "default" };
+                File.WriteAllLines(labelcfg, arr);
+            }
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                labelNames.Add(arr[i]);
+                string[] ls = arr[i].Split(':');
+                if (ls.Length == 2)
+                    labellist.Add(new List<string>(ls[1].Split(',')));
+                else
+                    labellist.Add(new List<string>());
+            }
         }
 
         bool Export()
@@ -61,6 +100,7 @@ namespace exporter
             //start = DateTime.Now;
             //CheckError(Exporter.ExportGo(paths[2], paths[3]));
             //MessageBox.Show("导出go文件 " + (DateTime.Now - start).TotalSeconds);
+            //Cache.SaveCache();
             //return true;
 
             
@@ -74,7 +114,7 @@ namespace exporter
                         // 读取xlsx
                         CheckError(Exporter.ReadDataXlsx())
                         // 读 lua 公式
-                        // && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))
+                        //&& CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))
                         // 导出lua文件
                         // && CheckError(Exporter.ExportLua(paths[1]))
                         // 读 go 公式
@@ -102,7 +142,7 @@ namespace exporter
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            labels.AddRange(new Label[] { label1, label2, label3, label4 ,label5,label6});
+            labels.AddRange(new Label[] { label1, label2, label3, label4 ,label_cs,label_cscfg});
 
             for (int index = 0; index < paths.Length; index++)
             {
@@ -151,9 +191,13 @@ namespace exporter
                 }
             }
 
+            Cache.Init(labellist[labelSelect.SelectedIndex], divfolder.Checked ? labelNames[labelSelect.SelectedIndex].Split(':')[0] : "", cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
+            {
+                Cache.SaveCache();
                 MessageBox.Show("导出完成" + (DateTime.Now - start).TotalSeconds);
+            }
         }
 
         private void label_Click(object sender, EventArgs e) { SelectDir(labels.IndexOf((Label)sender)); }

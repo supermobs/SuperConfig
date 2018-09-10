@@ -200,6 +200,9 @@ namespace exporter
                                 List<string> args = new List<string>();
                                 for (int i = 0; i < node.ChildNodes[1].ChildNodes.Count; i++)
                                     args.Add(ToCode(node.ChildNodes[1].ChildNodes[i]));
+                                // 处理负数情况
+                                if (funcformat == CodeTemplate.Get("operator_code_-") && args.Count == 1)
+                                    args.Insert(0, "0");
                                 return FormatScript(funcformat, args);
 
                             case GrammarNames.Reference:
