@@ -481,7 +481,9 @@ namespace exporter
                         return "索引冲突 [" + values[0] + "]，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
 
                     bool useful = true;
-                    var idcom = row.GetCell(data.cols[0]).CellComment;
+                    var idcell = row.GetCell(data.cols[0]);
+                    IComment idcom = null;
+                    while (true) { try { idcom = idcell.CellComment; break; } catch { } }
                     if (idcom != null)
                         useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
                     if (useful)

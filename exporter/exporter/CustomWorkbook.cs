@@ -33,7 +33,7 @@ namespace exporter
             {
                 fileName = file.Name;
 
-                FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                FileStream fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
 
                 // 表的格式
                 if (file.Extension == ".xlsx")
@@ -43,12 +43,7 @@ namespace exporter
                     {
                         string[] arr = link.LinkedFileName.Split('/');
                         if (arr.Length > 1)
-                        {
                             link.LinkedFileName = arr[arr.Length - 1];
-                            fs.Close();
-                            fs = new FileStream(file.FullName, FileMode.Create);
-                            book.Write(fs);
-                        }
                     }
                     workbook = book;
                     evaluator = new XSSFFormulaEvaluator(workbook);
