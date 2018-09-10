@@ -57,7 +57,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(266, 360);
+            this.button2.Location = new System.Drawing.Point(266, 476);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 2;
@@ -185,20 +185,20 @@
             // cacheTog
             // 
             this.cacheTog.AutoSize = true;
-            this.cacheTog.Location = new System.Drawing.Point(188, 324);
+            this.cacheTog.Location = new System.Drawing.Point(188, 360);
             this.cacheTog.Name = "cacheTog";
             this.cacheTog.Size = new System.Drawing.Size(72, 16);
-            this.cacheTog.TabIndex = 14;
+            this.cacheTog.TabIndex = 16;
             this.cacheTog.Text = "use cached";
             this.cacheTog.UseVisualStyleBackColor = true;
             // 
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.labelSelect);
-            this.groupBox5.Location = new System.Drawing.Point(14, 244);
+            this.groupBox5.Location = new System.Drawing.Point(14, 418);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Size = new System.Drawing.Size(327, 52);
-            this.groupBox5.TabIndex = 14;
+            this.groupBox5.TabIndex = 17;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "output label"; //导表标签
             // 
@@ -213,10 +213,10 @@
             // divfolder
             // 
             this.divfolder.AutoSize = true;
-            this.divfolder.Location = new System.Drawing.Point(74, 323);
+            this.divfolder.Location = new System.Drawing.Point(74, 360);
             this.divfolder.Name = "divfolder";
             this.divfolder.Size = new System.Drawing.Size(108, 16);
-            this.divfolder.TabIndex = 15;
+            this.divfolder.TabIndex = 18;
             this.divfolder.Text = "output divfolder"; //导出数据分目录
             this.divfolder.UseVisualStyleBackColor = true;
             // 
@@ -224,7 +224,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(353, 351);
+            this.ClientSize = new System.Drawing.Size(370, 550);
             this.Controls.Add(this.divfolder);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.cacheTog);
