@@ -153,7 +153,7 @@ namespace exporter
             }
 
             folderBrowserDialog = new FolderBrowserDialog();
-            folderBrowserDialog.Description = "请选择路径";
+            folderBrowserDialog.Description = "select path";
             folderBrowserDialog.ShowNewFolderButton = true;
         }
 
@@ -186,7 +186,7 @@ namespace exporter
             {
                 if (string.IsNullOrEmpty(paths[index]))
                 {
-                    MessageBox.Show("请设置好路径先!");
+                    MessageBox.Show("please set the path first!");
                     return;
                 }
             }
@@ -196,7 +196,7 @@ namespace exporter
             if (Export())
             {
                 Cache.SaveCache();
-                MessageBox.Show("导出完成" + (DateTime.Now - start).TotalSeconds);
+                MessageBox.Show("finish" + (DateTime.Now - start).TotalSeconds);
             }
         }
 
