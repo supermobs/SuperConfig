@@ -491,10 +491,12 @@ namespace exporter
 
                     bool useful = true;
                     var idcell = row.GetCell(data.cols[0]);
-                    IComment idcom = null;
-                    while (true) { try { idcom = idcell.CellComment; break; } catch { } }
-                    if (idcom != null)
-                        useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
+
+                    // 先注释掉，不然导不出那些加备注的行
+                    //IComment idcom = null;
+                    //while (true) { try { idcom = idcell.CellComment; break; } catch { } }
+                    //if (idcom != null)
+                        //useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
                     if (useful)
                     {
                         // 添加id
