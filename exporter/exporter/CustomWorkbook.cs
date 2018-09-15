@@ -79,7 +79,7 @@ namespace exporter
             });
         }
 
-        public static void Init(string excelpath)
+        public static void Init(string excelpath, out List<string> readfiles)
         {
             evaluatorEnv = new Dictionary<string, IFormulaEvaluator>();
             allBooks = new List<CustomWorkbook>();
@@ -92,7 +92,7 @@ namespace exporter
                 evaluateSheets = new List<string>(File.ReadAllLines(evaConfPath));
 
             // 遍历导出目录
-            List<string> readfiles = new List<string>();
+            readfiles = new List<string>();
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
                 if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls"))
