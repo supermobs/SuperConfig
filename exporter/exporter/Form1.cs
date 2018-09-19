@@ -16,8 +16,10 @@ namespace exporter
     {
         public Form1(string[] args)
         {
+            Console.WriteLine("初始化路径...");
             LoadPaths();
 
+            Console.WriteLine("初始化缓存...");
             List<string> argslist = new List<string>(args);
             int labelindex = 0;
             foreach (string arg in argslist)
@@ -27,12 +29,12 @@ namespace exporter
 
             if (argslist.Contains("nowindow"))
             {
+                Console.WriteLine("启动导表程序...");
                 if (Export())
                 {
-                    Cache.SaveCache();
                     Console.WriteLine("Complete");
+                    Environment.Exit(0);
                 }
-                Environment.Exit(0);
             }
             else
             {
@@ -42,7 +44,6 @@ namespace exporter
                     labelSelect.Items.Add(ln);
                 labelSelect.SelectedIndex = 0;
             }
-
         }
 
         string[] paths = new string[6];
@@ -82,52 +83,46 @@ namespace exporter
 
         bool Export()
         {
-            //DateTime start = DateTime.Now;
-            //CustomWorkbook.Init(paths[0]);
-            //MessageBox.Show("读入所有表 " + (DateTime.Now - start).TotalSeconds);
-            //start = DateTime.Now;
-            //CheckError(Exporter.ReadDataXlsx());
-            //MessageBox.Show("读取xlsx " + (DateTime.Now - start).TotalSeconds);
-            //start = DateTime.Now;
-            //CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua));
-            //MessageBox.Show("lua公式 " + (DateTime.Now - start).TotalSeconds);
-            //start = DateTime.Now;
-            //CheckError(Exporter.ExportLua(paths[1]));
-            //MessageBox.Show("导出lua文件 " + (DateTime.Now - start).TotalSeconds);
-            //start = DateTime.Now;
-            //CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo));
-            //MessageBox.Show("go公式 " + (DateTime.Now - start).TotalSeconds);
-            //start = DateTime.Now;
-            //CheckError(Exporter.ExportGo(paths[2], paths[3]));
-            //MessageBox.Show("导出go文件 " + (DateTime.Now - start).TotalSeconds);
-            //Cache.SaveCache();
-            //return true;
-
-            
-            // 这里会读取所有配置表
-            // 把配置表结构 + 公式结构获取出来
-            CustomWorkbook.Init(paths[0]);
-
             try
             {
-                return
-                        // 读取xlsx
-                        CheckError(Exporter.ReadDataXlsx())
-                        // 读 lua 公式
-                        //&& CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))
-                        // 导出lua文件
-                        // && CheckError(Exporter.ExportLua(paths[1]))
-                        // 读 go 公式
-                         && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))
-                        // 导出go文件
-                         && CheckError(Exporter.ExportGo(paths[2], paths[3]))
-                        // 读 cs 公式
-                        && CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetCS))
-                        // 导出cs文件
-                        && CheckError(Exporter.ExportCS(paths[4], paths[5]))
-                        //&& CheckError()
-                    //
-                    ;
+                DateTime start = DateTime.Now;
+                List<string> readfiles;
+                CustomWorkbook.Init(paths[0], out readfiles);
+                if (readfiles.Count < 10)
+                    readfiles.ForEach(Console.WriteLine);
+                Console.WriteLine("读入" + readfiles.Count + "张表," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                start = DateTime.Now;
+                if (!CheckError(Exporter.ReadDataXlsx())) return false;
+                Console.WriteLine("读取xlsx, " + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                //start = DateTime.Now;
+                //if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))) return false;
+                //Console.WriteLine("lua公式, " + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                //start = DateTime.Now;
+                //if (!CheckError(Exporter.ExportLua(paths[1]))) return false;
+                //Console.WriteLine("导出lua文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                start = DateTime.Now;
+                if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))) return false;
+                Console.WriteLine("go公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                start = DateTime.Now;
+                if (!CheckError(Exporter.ExportGo(paths[2], paths[3]))) return false;
+                Console.WriteLine("导出go文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                start = DateTime.Now;
+                if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetCS))) return false;
+                Console.WriteLine("c#公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                start = DateTime.Now;
+                if (!CheckError(Exporter.ExportCS(paths[4], paths[5]))) return false;
+                Console.WriteLine("导出c#文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+
+                Cache.SaveCache();
+                Console.WriteLine("存储缓存");
+                return true;
             }
             catch (Exception ex)
             {
@@ -175,6 +170,7 @@ namespace exporter
             if (!string.IsNullOrEmpty(error))
             {
                 MessageBox.Show(error);
+                Console.WriteLine(error);
                 return false;
             }
             return true;
