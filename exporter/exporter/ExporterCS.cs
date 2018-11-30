@@ -414,7 +414,7 @@ namespace exporter
                         foreach (var t in g.Value)
                         {
                             string vk = t.Substring(0, 1).ToUpper() + t.Substring(1);
-                            cach_key += ("+"+vk);
+                            cach_key += ("+"+vk+"+"+"\"_\"");
                         }
                         string cach_group_name = gk + "_Cached";
                         sb.Append("string cach_key = " + cach_key + ";\r\n");
