@@ -211,21 +211,20 @@ namespace exporter
             // 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
             typeconvert.Add("int", "int32");
-            typeconvert.Add("string", "string");
-            typeconvert.Add("double", "float32");
+            typeconvert.Add("long", "int64");
             typeconvert.Add("float", "float32");
-            typeconvert.Add("float64", "float64");
+            typeconvert.Add("double", "float64");
+            typeconvert.Add("string", "string");
             typeconvert.Add("[]int", "[]int32");
-            typeconvert.Add("[]string", "[]string");
-            typeconvert.Add("[]double", "[]float32");
+            typeconvert.Add("[]long", "[]int64");
             typeconvert.Add("[]float", "[]float32");
-            typeconvert.Add("[]float64", "[]float64");
+            typeconvert.Add("[]double", "[]float64");
+            typeconvert.Add("[]string", "[]string");
             // 索引类型转换
             Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
             mapTypeConvert.Add("int32", "int32");
+            mapTypeConvert.Add("int64", "int64");
             mapTypeConvert.Add("string", "string");
-            mapTypeConvert.Add("float32", "string");
-            mapTypeConvert.Add("float64", "string");
 
             int goWriteCount = 0;
             List<string> loadFormulaFuncs = new List<string>();
