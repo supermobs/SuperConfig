@@ -79,7 +79,7 @@ namespace exporter
     {
         static Dictionary<string, string> formulaContents = new Dictionary<string, string>();
 
-        static List<string> dataTypes = new List<string>() { "int", "string", "double", "float", "float64", "[]int", "[]string", "[]double", "[]float", "[]float64" };
+        static List<string> dataTypes = new List<string>() { "int", "long", "string", "double", "float", "[]int", "[]long", "[]string", "[]double", "[]float" };
         static Dictionary<string, DataStruct> datas = new Dictionary<string, DataStruct>();
         class DataStruct
         {
@@ -157,6 +157,9 @@ namespace exporter
                         case "int":
                             codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt32(cellValue.NumberValue) :
                                 cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
+                        case "long":
+                            codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt64(cellValue.NumberValue) :
+                                cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : long.Parse(cellValue.StringValue); break;
                         case "string":
                             codevalue = cellValue.CellType == CellType.String ? cellValue.StringValue : cellValue.ToString(); break;
                         case "double":
@@ -176,12 +179,16 @@ namespace exporter
                                         for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
                                         codevalue = v;
                                         break;
+                                    case "long":
+                                        long[] v64 = new long[arr.Length];
+                                        for (int ii = 0; ii < arr.Length; ii++) v64[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : long.Parse(arr[ii]);
+                                        codevalue = v64;
+                                        break;
                                     case "string":
                                         codevalue = arr;
                                         break;
                                     case "double":
                                     case "float":
-                                    case "float64":
                                         double[] vv = new double[arr.Length];
                                         for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
                                         codevalue = vv;
@@ -208,6 +215,9 @@ namespace exporter
                             codevalue = ct == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
                                 (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? int.Parse(cell.StringCellValue) : 0);
                             break;
+                        case "long":
+                            codevalue = ct == CellType.Numeric ? Convert.ToInt64(cell.NumericCellValue) :
+                                (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue)) ? long.Parse(cell.StringCellValue) : 0; break;
                         case "string":
                             codevalue = ct == CellType.Numeric ? cell.NumericCellValue.ToString() :
                                 (ct == CellType.String ? cell.StringCellValue : "");
@@ -229,6 +239,11 @@ namespace exporter
                                         int[] v = new int[arr.Length];
                                         for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
                                         codevalue = v;
+                                        break;
+                                    case "long":
+                                        long[] v64 = new long[arr.Length];
+                                        for (int ii = 0; ii < arr.Length; ii++) v64[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : long.Parse(arr[ii]);
+                                        codevalue = v64;
                                         break;
                                     case "string":
                                         codevalue = arr;
