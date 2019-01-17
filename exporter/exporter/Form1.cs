@@ -66,7 +66,9 @@ namespace exporter
             }
         }
 
-        string[] paths = new string[8];
+        const int PATH_LEN = 8;
+        // string[] paths = new string[8];
+        List<string> paths = new List<string>(PATH_LEN);
         List<List<string>> labellist = new List<List<string>>();
         List<string> labelNames = new List<string>();
         string pathConfigFile = "pathconfig";
@@ -76,7 +78,14 @@ namespace exporter
             pathConfigFile = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + pathConfigFile;
 
             if (File.Exists(pathConfigFile))
-                paths = File.ReadAllLines(pathConfigFile);
+            {
+                var ps = File.ReadAllLines(pathConfigFile);
+                paths.AddRange(ps);
+                for (int i = paths.Count-1; i < PATH_LEN; i++)
+                {
+                    paths.Add("");                    
+                }
+            }
 
             string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
             string[] arr;
@@ -183,7 +192,7 @@ namespace exporter
         {
             labels.AddRange(new Label[] { label1, label2, label3, label4 ,label_cs,label_cscfg,label_ts,label_tscfg});
 
-            for (int index = 0; index < paths.Length; index++)
+            for (int index = 0; index < paths.Count; index++)
             {
                 if (Directory.Exists(paths[index]))
                     labels[index].Text = paths[index];
@@ -220,9 +229,9 @@ namespace exporter
             return true;
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void onBtnOutput(object sender, EventArgs e)
         {
-            for (int index = 0; index < paths.Length; index++)
+            for (int index = 0; index < PATH_LEN; index++)
             {
                 if (string.IsNullOrEmpty(paths[index]))
                 {
