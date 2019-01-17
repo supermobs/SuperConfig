@@ -18,9 +18,10 @@ type LevelTableGroup struct {
 type LevelConfig struct {
 	Level  int32   // 等级
 	Maxexp float32 // 升级经验
-	Maxhp  float64 // 最大血量
+	Maxhp  float32 // 最大血量
 	Txt    string  // 测试文本
 	Double float32 // 测试double
+	Aaa    int64   // 测试
 }
 
 var _LevelIns *LevelTable
@@ -72,15 +73,18 @@ func (ins *LevelTable) Get_maxexp_maxhp(Maxexp string, Maxhp string) []*LevelCon
 	}
 	return make([]*LevelConfig, 0)
 }
-func data_level_vlookup_1(id float32) float32 {
-	return float32(GetLevelTable().Datas[int32(id)].Level)
+func data_level_vlookup_1(id float64) float64 {
+	return float64(GetLevelTable().Datas[int32(id)].Level)
 }
-func data_level_vlookup_2(id float32) float32 {
-	return float32(GetLevelTable().Datas[int32(id)].Maxexp)
+func data_level_vlookup_2(id float64) float64 {
+	return float64(GetLevelTable().Datas[int32(id)].Maxexp)
 }
-func data_level_vlookup_3(id float32) float32 {
-	return float32(GetLevelTable().Datas[int32(id)].Maxhp)
+func data_level_vlookup_3(id float64) float64 {
+	return float64(GetLevelTable().Datas[int32(id)].Maxhp)
 }
-func data_level_vlookup_5(id float32) float32 {
-	return float32(GetLevelTable().Datas[int32(id)].Double)
+func data_level_vlookup_5(id float64) float64 {
+	return float64(GetLevelTable().Datas[int32(id)].Double)
+}
+func data_level_vlookup_6(id float64) float64 {
+	return float64(GetLevelTable().Datas[int32(id)].Aaa)
 }

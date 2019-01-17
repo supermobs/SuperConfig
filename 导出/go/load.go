@@ -9,11 +9,14 @@ import (
 
 func init() {
 	defer cfg_init_success()
+	cfg_regisiter("damageparm", loadSheetDamageparm)
 	cfg_regisiter("level", loadSheetLevel)
 }
 
 func Load() {
 	start := time.Now()
+	loadFormulaDamage()
+	loadFormulaDamage_buff()
 	loadFormulaHero()
 	loadFormulaPlayer()
 
