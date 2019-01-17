@@ -13,32 +13,10 @@ namespace exporter
 {
     public static partial class Exporter
     {
-        static string FixFloat(string format)
-        {
-            Regex reg = new Regex("\\d+\\.\\d+(?!f)");
-            return reg.Replace(format, match => match.Value + "f");
-        }
-
-        public static string TitleToUpper(this string str)
-        {
-            if (string.IsNullOrWhiteSpace(str))
-                return string.Empty;
-
-            char[] s = str.ToCharArray();
-            char c = s[0];
-
-            if ('a' <= c && c <= 'z')
-                c = (char)(c & ~0x20);
-
-            s[0] = c;
-
-            return new string(s);
-        }
-
         /// <summary>
         /// 声明CS
         /// </summary>
-        static void AppendCSDeclara(ISheet sheet, int col, bool canWrite, StringBuilder sb)
+        static void AppendTSDeclara(ISheet sheet, int col, bool canWrite, StringBuilder sb)
         {
             List<string> declaras = new List<string>();
             for (int i = 0; i <= sheet.LastRowNum; i++)
@@ -72,7 +50,7 @@ namespace exporter
             }
         }
 
-        public static string DealWithFormulaSheetCS(ISheet sheet)
+        public static string DealWithFormulaSheetTS(ISheet sheet)
         {
             CodeTemplate.curlang = CodeTemplate.Langue.CS;
 
@@ -231,7 +209,7 @@ namespace exporter
             return string.Empty;
         }
 
-        public static string ExportCS(string codeExportDir, string configExportDir)
+        public static string ExportTS(string codeExportDir, string configExportDir)
         {
             // 目录清理
             if (Directory.Exists(configExportDir))

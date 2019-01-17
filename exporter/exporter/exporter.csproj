@@ -111,6 +111,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="ExporterCS.cs" />
+    <Compile Include="ExporterTS.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">
