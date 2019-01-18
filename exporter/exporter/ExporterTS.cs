@@ -289,7 +289,7 @@ namespace exporter
                     // 加载方法
                     sb.Append("\t function Load" + tableClassName + "(){\r\n");
                     // Laya.loader.getRes("laya.json");
-                    sb.Append(string.Format("\t\t{0} = Laya.loader.getRes(\"{1}\");\r\n", "_" + tableClassName,data.name));
+                    sb.Append(string.Format("\t\t{0} = Laya.loader.getRes(\"{1}.json\");\r\n", "_" + tableClassName,data.name));
                     sb.Append("\t}\r\n");
 
                     // 清理方
