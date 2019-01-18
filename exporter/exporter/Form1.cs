@@ -67,7 +67,6 @@ namespace exporter
         }
 
         const int PATH_LEN = 8;
-        // string[] paths = new string[8];
         List<string> paths = new List<string>(PATH_LEN);
         List<List<string>> labellist = new List<List<string>>();
         List<string> labelNames = new List<string>();

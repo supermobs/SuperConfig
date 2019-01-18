@@ -16,7 +16,8 @@ namespace exporter
         {
             Lua,
             Go,
-            CS
+            CS,
+            TS
         }
 
         public static Langue curlang = Langue.Lua;
@@ -28,6 +29,7 @@ namespace exporter
                 case Langue.Lua: key = "[LUA]" + key; break;
                 case Langue.Go: key = "[GO]" + key; break;
                 case Langue.CS: key = "[CS]" + key; break;
+                case Langue.TS: key = "[TS]" + key; break;
             }
 
             if (!allkeys.Contains(key))
