@@ -320,6 +320,7 @@ namespace exporter
                     if (!string.IsNullOrEmpty(err))
                         return err;
                     int id = (int)codevalue;
+                    if (id == 0) continue;
                     if (data.dataLabelModifys[labelindex].ContainsKey(id))
                         return "id冲突，表名" + sheet.SheetName + ",id=" + id;
                     data.dataLabelModifys[labelindex].Add(id, new Dictionary<int, object>());
@@ -352,9 +353,10 @@ namespace exporter
                 try
                 {
                     return DealWithDataLabelSheet(sheet, book);
-                }catch(Exception e)
+                }
+                catch (Exception e)
                 {
-                    return "deal with label sheet error : "+ book.fileName + " - " + tableName + "\n" + e.Message + "\n" + e.StackTrace;
+                    return "deal with label sheet error : " + book.fileName + " - " + tableName + "\n" + e.Message + "\n" + e.StackTrace;
                 }
             }
 
@@ -511,7 +513,7 @@ namespace exporter
                     //IComment idcom = null;
                     //while (true) { try { idcom = idcell.CellComment; break; } catch { } }
                     //if (idcom != null)
-                        //useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
+                    //useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
                     if (useful)
                     {
                         // 添加id
