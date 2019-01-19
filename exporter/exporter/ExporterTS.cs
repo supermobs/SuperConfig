@@ -62,9 +62,10 @@ namespace exporter
             string className = SheetName + "FormulaSheet";
 
             // module定义,让所有表都在一个模块里面
-            sb.Append("module Config {\r\n");
+            sb.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
+            sb.Append("namespace SuperConfig {\r\n");
 
-            sb.Append("\tfunction " + " New" + className + "():"+className + "{\r\n");
+            sb.Append("\t export function " + " New" + className + "():"+className + "{\r\n");
             sb.Append("\t\tvar formula = new " + className + "();\r\n");
             sb.Append("\t\tformula.Init();\r\n");
             sb.Append("\t\treturn formula;\r\n");
@@ -94,12 +95,12 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.Append("this.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()) + ";\r\n");
+                        sb.Append("this.datas.set(" + ((rownum + 1) * 1000 + colnum + 1) + "," + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()) + ");\r\n");
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.Append("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = (ins) => {\r\n");
+                        sb.Append("this.funcs.set(" + ((rownum + 1) * 1000 + colnum + 1) + " , (ins) => {\r\n");
 
                         string content = Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about);
 
@@ -109,7 +110,7 @@ namespace exporter
                         // }
 
                         sb.Append("\treturn " + content + ";\r\n");
-                        sb.Append("};\r\n");
+                        sb.Append("});\r\n");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
                         foreach (CellCoord cc in about)
@@ -150,7 +151,7 @@ namespace exporter
             // 数据影响关联
             foreach (var item in abouts)
             {
-                sb.Append("this.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = [" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "];\r\n");
+                sb.Append("this.relation.set(" + (item.Key.row * 1000 + item.Key.col) + ", [" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "]);\r\n");
             }
             sb.Append("} // 初始化数据结束\r\n\r");
 
@@ -277,23 +278,26 @@ namespace exporter
                     StringBuilder sb = new StringBuilder();
 
                     // 扩展Config类统一获取某个表的实例对象
-                    sb.Append("module Config {\r\n");
+                    sb.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
+                    sb.Append("namespace SuperConfig {\r\n");
 
                     // 获取方法
                     sb.Append("\tvar "+ " _" + tableClassName +":"+tableClassName+ ";\r\n");
-                    sb.Append("\t function " + " Get" + tableClassName + "()"+ ":" + tableClassName + "{\r\n");
+                    sb.Append("\t export function " + " Get" + tableClassName + "()"+ ":" + tableClassName + "{\r\n");
                     sb.Append(string.Format("\tif({0} == null) Load{1}();\r\n", "_" + tableClassName, tableClassName));
                     sb.Append("\t\treturn _" + tableClassName + ";\r\n");
                     sb.Append("\t}\r\n");
 
                     // 加载方法
-                    sb.Append("\t function Load" + tableClassName + "(){\r\n");
-                    // Laya.loader.getRes("laya.json");
-                    sb.Append(string.Format("\t\t{0} = Laya.loader.getRes(\"{1}.json\");\r\n", "_" + tableClassName,data.name));
+                    sb.Append("\t export function Load" + tableClassName + "(){\r\n");
+                    // Laya.loader.getRes("res/config_data/laya.json");
+                    // 配置表需要放到对应引擎的地址:res/config_data/
+                    sb.Append(string.Format("\t\t{0} = LoadJsonFunc(\"{1}.json\");\r\n", "var json",data.name));
+                    sb.Append(string.Format("\t\t _{0} = new {1}().init(json);\n",tableClassName,tableClassName));
                     sb.Append("\t}\r\n");
 
                     // 清理方
-                    sb.Append(string.Format("\t function Clear{0} () {{\r\n", tableClassName));
+                    sb.Append(string.Format("\t export function Clear{0} () {{\r\n", tableClassName));
                     sb.Append(string.Format("\t\t_{0} = null;\r\n", tableClassName));
                     sb.Append("\t}\r\n");
                     lock (clearfuncs) clearfuncs.Add("this.Clear" + tableClassName);
@@ -306,7 +310,7 @@ namespace exporter
                     foreach (var g in data.groups)
                     {
                         // --------------------------------
-                        sb.Append("\tpublic ");
+                        sb.Append("\t// public ");
                         // Group的名称,合并参数后的,例如多个参数 ： a|b > a_b
                         var gk = g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1);
                         sb.Append(gk+":");
@@ -322,15 +326,26 @@ namespace exporter
                             sb.Append(">");
 
                         sb.Append(" ");
-                        
                         sb.Append(";\r\n");
                         // --------------------------------
 
-
+                        sb.Append("\tpublic "+gk+":any;\n");
 
                         // per group value
                     }
+
+                    // group 初始化方法
+                    sb.Append("\tinit(d){\n");
+                    foreach (var g in data.groups)
+                    {
+                        // 分组名称
+                        var gk = g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1);
+                        sb.Append("\r this."+gk+"=d."+gk+";\n");
+                    }
+                    sb.Append("\r\r\r\r return this;\r\n");
                     sb.Append("}\r\n");
+
+                    sb.Append("}\r\n"); // group class 结束
 
                     // config class
                     sb.Append("export class " + configClassName + " {\r\n");
@@ -338,7 +353,18 @@ namespace exporter
                     {
                         sb.Append("\tpublic " + " " + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ":"+typeconvert[data.types[i]]+ "; " + "// " + data.keyNames[i] + "\r\n");
                     }
-                    sb.Append("}\r\n\n");
+
+                    // config初始化
+                    sb.Append("\tinit(d){\n");
+                    for (int i = 0; i < data.keys.Count; i++)
+                    {
+                        var k = data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1);
+                        sb.Append("\t\t this." + k + "=d."+k+ "; " + "\n");
+                    }
+                    sb.Append("\r\r\r\r return this;\r\n");
+                    sb.Append("}\r\n");
+
+                    sb.Append("}\r\n\n"); // config class 结束
 
                     // table class
                     sb.Append("// " + string.Join(",", data.files) + "\r\n");
@@ -359,6 +385,21 @@ namespace exporter
                         sb.Append("Map<string" + "," + configClassName + "[]>();\r\n");
                         // --------------------------------
                     }
+
+                    // init function 
+                    sb.Append("\tinit(d){\n");
+                    sb.Append("\r\rthis.Name = d.Name;\n");
+                    var data_map_name = string.Format("Map<string, {0}>",configClassName);
+                    sb.Append("this._Datas = new " + data_map_name + "();\n");
+                    sb.Append("let keys = Object.keys(d._Datas);\n");
+                    sb.Append("for (let index = 0; index < keys.length; index++) {\n");
+                    sb.Append("var k = keys[index];\n");
+                    sb.Append(string.Format("this._Datas.set(k,new {0}().init(d._Datas[k]));\n",configClassName));
+                    sb.Append("}\r\n");
+                    
+                    sb.Append(string.Format("\r\r\r\rthis._Group = new {0}().init(d._Group);\n",groupClassName));
+                    sb.Append("\r return this;\r\n");
+                    sb.Append("}\r\n");
 
                     // get config function
                     sb.Append("\n\r\rpublic " + "Get(id:number) :" + configClassName + " {\r\n");
@@ -399,23 +440,22 @@ namespace exporter
                         {
                             if (i == 0)
                             {
-                                sb.Append("if (" + oldDictName + ".has(");
+                                sb.Append("if (" + oldDictName + "[");
                                 oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
-                                sb.Append(oldKeyName + ".toString()) ){\r\n");
+                                sb.Append(oldKeyName + ".toString()] ){\r\n");
                             }
                             else
                             {
                                 string tempName = "tmp" + (i - 1);
                                 sb.Append("var " + tempName + " = " + oldDictName + "[" + oldKeyName + ".toString()];\r\n");
-                                sb.Append("if (" + tempName + ".has(");
+                                sb.Append("if (" + tempName + "[");
                                 oldDictName = tempName;
                                 oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
-                                sb.Append(oldKeyName + ".toString()) ){\r\n");
+                                sb.Append(oldKeyName + ".toString()] ){\r\n");
                             }
                         }
 
                         sb.Append("var ids = " + oldDictName + "[" + oldKeyName + ".toString()];\r\n");
-                        // sb.Append("var configs = new " + configClassName + "[ids.Length];\r\n");
                         sb.Append("var configs = [];\r\n");
                         sb.Append("for (let i = 0; i < ids.length; i++) {\r\n");
                         sb.Append("\tvar id = ids[i];\r\n");
@@ -436,7 +476,7 @@ namespace exporter
                         if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
                             continue;
                         sb.Append("\tpublic data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id:number) : number {\r\n");
-                        sb.Append("\treturn Get" + tableClassName + "()._Datas[id.toString()]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ";\r\n");
+                        sb.Append("\treturn Get" + tableClassName + "()._Datas.get(id.toString())." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ";\r\n");
                         sb.Append("}\r\n");
                     }
 
@@ -525,7 +565,8 @@ namespace exporter
             StringBuilder loadcode = new StringBuilder();
 
             // 扩展Config类统一获取某个表的实例对象
-            loadcode.Append("module Config {\r\n");
+            loadcode.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
+            loadcode.Append("namespace SuperConfig {\r\n");
 
             // load all
             loadcode.Append("\t function Load() {\r\n");
