@@ -489,8 +489,7 @@ namespace exporter
                     }
 
                     int id = (int)values[0];
-                    //if (id == 0) // id=0忽略，方便公式生成id
-                    //    continue;
+                    if (id == 0) continue;
                     if (id == -1)
                     {
                         string key = book.fileName + " " + tableName + " ";
