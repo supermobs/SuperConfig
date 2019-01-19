@@ -65,7 +65,7 @@ namespace exporter
             sb.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
             sb.Append("namespace SuperConfig {\r\n");
 
-            sb.Append("\tfunction " + " New" + className + "():"+className + "{\r\n");
+            sb.Append("\t export function " + " New" + className + "():"+className + "{\r\n");
             sb.Append("\t\tvar formula = new " + className + "();\r\n");
             sb.Append("\t\tformula.Init();\r\n");
             sb.Append("\t\treturn formula;\r\n");
@@ -95,12 +95,12 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.Append("this.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()) + ";\r\n");
+                        sb.Append("this.datas.set(" + ((rownum + 1) * 1000 + colnum + 1) + "," + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()) + ");\r\n");
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.Append("this.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = (ins) => {\r\n");
+                        sb.Append("this.funcs.set(" + ((rownum + 1) * 1000 + colnum + 1) + " , (ins) => {\r\n");
 
                         string content = Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about);
 
@@ -110,7 +110,7 @@ namespace exporter
                         // }
 
                         sb.Append("\treturn " + content + ";\r\n");
-                        sb.Append("};\r\n");
+                        sb.Append("});\r\n");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
                         foreach (CellCoord cc in about)
@@ -151,7 +151,7 @@ namespace exporter
             // 数据影响关联
             foreach (var item in abouts)
             {
-                sb.Append("this.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = [" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "];\r\n");
+                sb.Append("this.relation.set(" + (item.Key.row * 1000 + item.Key.col) + ", [" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "]);\r\n");
             }
             sb.Append("} // 初始化数据结束\r\n\r");
 
