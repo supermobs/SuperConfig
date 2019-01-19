@@ -345,9 +345,18 @@ namespace exporter
             string tableName = sheet.SheetName;
             if (tableName.StartsWith("_"))
                 return string.Empty;
+
             string[] larr = tableName.Split('_');
-            if (larr[larr.Length - 1] == larr[larr.Length - 1].ToUpper())
-                return DealWithDataLabelSheet(sheet, book);
+            if (tableName.Contains("_") && larr[larr.Length - 1] == larr[larr.Length - 1].ToUpper())
+            {
+                try
+                {
+                    return DealWithDataLabelSheet(sheet, book);
+                }catch(Exception e)
+                {
+                    return "deal with label sheet error : "+ book.fileName + " - " + tableName + "\n" + e.Message + "\n" + e.StackTrace;
+                }
+            }
 
             DataStruct data;
             lock (datas)
@@ -497,10 +506,12 @@ namespace exporter
 
                     bool useful = true;
                     var idcell = row.GetCell(data.cols[0]);
-                    IComment idcom = null;
-                    while (true) { try { idcom = idcell.CellComment; break; } catch { } }
-                    if (idcom != null)
-                        useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
+
+                    // 先注释掉，不然导不出那些加备注的行
+                    //IComment idcom = null;
+                    //while (true) { try { idcom = idcell.CellComment; break; } catch { } }
+                    //if (idcom != null)
+                        //useful = new List<string>(idcom.String.String.Split('\n')).Intersect(Cache.labels).Count() > 0;
                     if (useful)
                     {
                         // 添加id

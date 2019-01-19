@@ -141,6 +141,7 @@ namespace exporter
                     {
                         switch (node.Term.Name)
                         {
+                            case GrammarNames.TokenUDF:
                             case GrammarNames.TokenExcelConditionalRefFunction:
                             case GrammarNames.TokenExcelRefFunction:
                             case GrammarNames.ExcelFunction:
@@ -191,6 +192,7 @@ namespace exporter
                     {
                         switch (node.Term.Name)
                         {
+                            case GrammarNames.UDFunctionCall: // mac ???
                             case GrammarNames.ReferenceFunctionCall:
                             case GrammarNames.FunctionCall:
                                 // 函数调用，找出函数和参数组合代码

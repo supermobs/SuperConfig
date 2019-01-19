@@ -53,6 +53,18 @@ namespace exporter
                     workbook = new HSSFWorkbook(fs);
                     evaluator = new HSSFFormulaEvaluator(workbook);
                 }
+                else if (file.Extension == ".xlsm")
+                {
+                    var book = new XSSFWorkbook(fs);
+                    foreach (var link in book.ExternalLinksTable)
+                    {
+                        string[] arr = link.LinkedFileName.Split('/');
+                        if (arr.Length > 1)
+                            link.LinkedFileName = arr[arr.Length - 1];
+                    }
+                    workbook = book;
+                    evaluator = new XSSFFormulaEvaluator(workbook);
+                }
                 else
                 {
                     // csv
@@ -95,7 +107,7 @@ namespace exporter
             readfiles = new List<string>();
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
-                if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls"))
+                if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls" && file.Extension != ".xlsm"))
                     continue;
                 foreach (var fname in Cache.GetNoCacheAbout(file))
                 {
@@ -103,10 +115,12 @@ namespace exporter
                         readfiles.Add(fname);
                 }
             }
+            int count = 1;
             foreach (var fname in readfiles)
             {
                 var file = new FileInfo(excelpath + "/" + fname);
                 CustomWorkbook book = new CustomWorkbook(file);
+                Console.WriteLine(count + " - 读取了表：" + fname);
                 book.type = CustomWorkbookType.Export;
                 totalCount++;
             }
