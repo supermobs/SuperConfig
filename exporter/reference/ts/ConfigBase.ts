@@ -1,7 +1,11 @@
 /**
  * * 配置表模块撒!放进项目里面撒.
  */
-module Config {
+namespace SuperConfig {
+
+  // * 加载json的接口委托，由引擎设置
+  export var LoadJsonFunc : Function = null;
+
   export class FormulaSheetTemplate {
     public datas: Map<number, number> = new Map<number, number>();
     public relation: Map<number, number[]> = new Map<number, number[]>();
