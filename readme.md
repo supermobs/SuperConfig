@@ -1,3 +1,4 @@
+![工具预览图](https://github.com/supermobs/SuperConfig/blob/master/buildtool.jpg)
 ## 教程
 ***详细在build/tutorial里面有详细教程，请查看！***
 
