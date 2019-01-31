@@ -1,4 +1,11 @@
-﻿## excel表
+![工具预览图](https://github.com/supermobs/SuperConfig/blob/master/buildtool.jpg)
+## 教程
+***详细在build/tutorial里面有详细教程，请查看！***
+
+## TestCase
+如果直接运行build里面的快捷可执行文件的话，需要修改pathconfig文件里面的路径为自己的目录路径，实际上对应exporter.exe界面的路径
+
+## excel表
 1、文件名随意 
 
 2、sheet名纯小写字母，不同excel文件中的sheet视为同一张表 
