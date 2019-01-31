@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<!-- saved from url=(0044)https://www.zybuluo.com/leviyuan/note/883187 -->
+<html class="theme"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    
+    <meta name="description" content="Cmd Markdown 编辑阅读器，支持实时同步预览，区分写作和阅读模式，支持在线存储，分享文稿网址。">
+    <meta name="author" content="Jiawei Zhang">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>SuperConfig - 作业部落 Cmd Markdown 编辑阅读器</title>
+
+
+    <link href="https://www.zybuluo.com/static/img/favicon.png" type="image/x-icon" rel="icon">
+
+    <link href="./SuperConfig_files/1bc053c8.base.lib.min.css" rel="stylesheet" media="screen">
+
+
+    
+    <!-- id="prettify-style" will be used to get the link element below and change href to change prettify code, so it can't be in beginmin/endmin block. -->
+    <link id="prettify-style" href="./SuperConfig_files/prettify-cmd.css" type="text/css" rel="stylesheet">
+    <!--
+    <link id="mermaid-style" href="https://www.zybuluo.com/static/editor/libs/mermaid/mermaid.forest.css" type="text/css" rel="stylesheet">
+    -->
+    <link href="./SuperConfig_files/45c7d56d.layout.min.css" rel="stylesheet" media="screen">
+
+
+    
+
+    <script async="" src="./SuperConfig_files/analytics.js"></script><script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-44461741-1', 'zybuluo.com');
+      ga('send', 'pageview');
+    </script>
+</head>
+
+<body class="theme">
+
+    <div id="global-prompt-alert" class="hide alert alert-warning">
+        <span id="global-prompt-message"></span>
+        <a id="close-global-prompt-alert" href="https://www.zybuluo.com/leviyuan/note/883187">[关闭]</a>
+    </div>
+
+    <!-- zybuluo's body -->
+    
+
+
+
+
+
+
+
+<!-- mdeditor's body -->
+
+
+
+
+
+
+<div id="editor-reader-full" class="editor-reader-full-shown" style="position: static;">
+    <div id="reader-full-topInfo" class="reader-full-topInfo-shown">
+        <span>
+            <code>@leviyuan</code>
+        </span>
+        <code><span class="article-updated-date">2017-09-30T07:27:52.000000Z</span></code>
+        <code><span>字数 </span><span class="article-characters">3709</span></code>
+        <code><span>阅读 </span><span class="article-read">96</span></code>
+    </div>
+    <div id="wmd-preview" class="wmd-preview wmd-preview-full-reader"><div class="md-section-divider"></div><div class="md-section-divider"></div><h1 data-anchor-id="a4cw" id="superconfig">SuperConfig</h1><p data-anchor-id="1t3y"><code>config</code></p><hr><div class="md-section-divider"></div><h2 data-anchor-id="81p4" id="格式规范">格式规范</h2><ul data-anchor-id="9fns">
+<li><p>excel表 <br>
+1、文件名随意 <br>
+2、sheet名纯小写字母，不同excel文件中的sheet视为同一张表 <br>
+3、不需要导出的sheet在sheet名加前缀"_" <br>
+4、sheet第一行，填写字段名数据分组，可以进行多字段联合分组("|"分隔)，有分组逻辑的数据必须进行分组 <br>
+5、sheet第二行，字段英文名，不填写留空的列将被过滤掉，不予导出，第一列不可留空，字母全小写 <br>
+6、sheet第三行，字段中文名 <br>
+7、sheet第四行，字段类型，int整数（不填默认为0）、string字符串、double浮点数（不填默认为0），在类型前加[]表示字段是数组字段（字段值用"|"分隔） <br>
+<img src="./SuperConfig_files/image.png" alt="image.png-4.8kB"> <br>
+8、sheet第五行开始是表的数据，首字段不填写或值为0视为无效数据 <br>
+9、sheet的首字段必须是int类型，并且是全表的唯一索引 <br>
+10、数据表中可以使用公式，公式也可以跨表引用，默认情况导出时以缓存计算的值为准，如果需要导出时重新计算公式值，讲sheet的名字加到<code>tools/excel_exporter/evaconfig</code>中（每行一个，一般只有引用编辑器导出表时才需要） <br>
+<img src="./SuperConfig_files/image(1).png" alt="image.png-49.2kB" title=""></p></li>
+<li><p>excel公式 <br>
+1、sheet名以(F)开头即标注本页是公式，sheet名的后面部分即为公式名 <br>
+<img src="./SuperConfig_files/image(2).png" alt="image.png-5.7kB"> <br>
+2、sheet内前三列为输入列，中文名、英文名(纯小写)、默认值 <br>
+3、sheet内四五六列为输出列，中文名、英文名(纯小写)、公式，英文名以<code>_</code>开头表示这项不直接导出给程序，暂时只有列表输出时使用（参见第10条） <br>
+4、sheet内前六列以外的部分也以任意使用（1000行、1000列以内），建议多做中间值，减少输入改变的重算量 <br>
+<img src="./SuperConfig_files/image(3).png" alt="image.png-17.4kB"> <br>
+5、公式表可以引用其他数据表里的内容，暂时只能通过VLOOKUP <br>
+6、sheet内只有数字、是非是有效单元格，字符串类型单元格导出时忽略 <br>
+7、禁止使用excel本身的随机数，在输入参数可以要求输入一个[0,1)的随机值 <br>
+8、支持基础运算：加+, 减-, 乘*, 除/, 乘方^ <br>
+9、excel公式支持 <code>IF</code>、 <code>POWER</code>、 <code>FACT</code>、 <code>MOD</code>、 <code>MAX</code>、 <code>MIN</code>、 <code>ROUND</code>、 <code>ROUNDDOWN</code>、 <code>ROUNDUP</code>、 <code>不使用矩阵的SUM</code>、 <code>以其他表id列做索引的VLOOKUP</code> <br>
+10、输出部分可以列成组，用<code>LS_[itemCount]_[mainIndex]_[name]</code>标识开头，用<code>LE_[name]</code>标识结尾;itemCount代表这一组中的每一项有多少个值，mainIndex代表这个几个值中第几个值是关键数据，关键数据为0代表这一项无效，示例如下： <br>
+<img src="./SuperConfig_files/image(4).png" alt="image.png-20.3kB" title=""></p></li>
+</ul><div class="md-section-divider"></div><h2 data-anchor-id="ggvi" id="索引的构建过程">索引的构建过程</h2><div class="md-section-divider"></div><pre class="prettyprint linenums prettyprinted" data-anchor-id="1hd0" style=""><ol class="linenums"><li class="L0"><code class="language-c#"><span class="com">// 假定数据结构是这样的</span></code></li><li class="L1"><code class="language-c#"><span class="kwd">class</span><span class="pln"> </span><span class="typ">Config</span></code></li><li class="L2"><code class="language-c#"><span class="pun">{</span></code></li><li class="L3"><code class="language-c#"><span class="pln">    </span><span class="kwd">public</span><span class="pln"> </span><span class="kwd">int</span><span class="pln"> id</span><span class="pun">;</span></code></li><li class="L4"><code class="language-c#"><span class="pln">    </span><span class="kwd">public</span><span class="pln"> </span><span class="kwd">string</span><span class="pln"> a</span><span class="pun">;</span></code></li><li class="L5"><code class="language-c#"><span class="pln">    </span><span class="kwd">public</span><span class="pln"> </span><span class="kwd">string</span><span class="pln"> b</span><span class="pun">;</span></code></li><li class="L6"><code class="language-c#"><span class="pln">    </span><span class="kwd">public</span><span class="pln"> </span><span class="kwd">int</span><span class="pln"> c</span><span class="pun">;</span></code></li><li class="L7"><code class="language-c#"></code></li><li class="L8"><code class="language-c#"><span class="pln">    </span><span class="kwd">public</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">(</span><span class="kwd">int</span><span class="pln"> id</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">string</span><span class="pln"> a</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">string</span><span class="pln"> b</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">int</span><span class="pln"> c</span><span class="pun">)</span></code></li><li class="L9"><code class="language-c#"><span class="pln">    </span><span class="pun">{</span></code></li><li class="L0"><code class="language-c#"><span class="pln">        </span><span class="kwd">this</span><span class="pun">.</span><span class="pln">id </span><span class="pun">=</span><span class="pln"> id</span><span class="pun">;</span></code></li><li class="L1"><code class="language-c#"><span class="pln">        </span><span class="kwd">this</span><span class="pun">.</span><span class="pln">a </span><span class="pun">=</span><span class="pln"> a</span><span class="pun">;</span></code></li><li class="L2"><code class="language-c#"><span class="pln">        </span><span class="kwd">this</span><span class="pun">.</span><span class="pln">b </span><span class="pun">=</span><span class="pln"> b</span><span class="pun">;</span></code></li><li class="L3"><code class="language-c#"><span class="pln">        </span><span class="kwd">this</span><span class="pun">.</span><span class="pln">c </span><span class="pun">=</span><span class="pln"> c</span><span class="pun">;</span></code></li><li class="L4"><code class="language-c#"><span class="pln">    </span><span class="pun">}</span></code></li><li class="L5"><code class="language-c#"><span class="pun">}</span></code></li><li class="L6"><code class="language-c#"></code></li><li class="L7"><code class="language-c#"><span class="kwd">static</span><span class="pln"> </span><span class="kwd">void</span><span class="pln"> buildindex</span><span class="pun">()</span></code></li><li class="L8"><code class="language-c#"><span class="pun">{</span></code></li><li class="L9"><code class="language-c#"><span class="pln">    </span><span class="com">// 所有数据都以id作为唯一主键</span></code></li><li class="L0"><code class="language-c#"><span class="pln">    </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">int</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">&gt;</span><span class="pln"> datas </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">int</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">&gt;();</span></code></li><li class="L1"><code class="language-c#"></code></li><li class="L2"><code class="language-c#"><span class="pln">    </span><span class="com">// 列举4条测试数据</span></code></li><li class="L3"><code class="language-c#"><span class="pln">    </span><span class="typ">Config</span><span class="pln"> c1 </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">(</span><span class="lit">1</span><span class="pun">,</span><span class="pln"> </span><span class="str">"A"</span><span class="pun">,</span><span class="pln"> </span><span class="str">"小猪"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">1</span><span class="pun">);</span></code></li><li class="L4"><code class="language-c#"><span class="pln">    </span><span class="typ">Config</span><span class="pln"> c2 </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">(</span><span class="lit">2</span><span class="pun">,</span><span class="pln"> </span><span class="str">"A"</span><span class="pun">,</span><span class="pln"> </span><span class="str">"小猫"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">2</span><span class="pun">);</span></code></li><li class="L5"><code class="language-c#"><span class="pln">    </span><span class="typ">Config</span><span class="pln"> c3 </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">(</span><span class="lit">3</span><span class="pun">,</span><span class="pln"> </span><span class="str">"B"</span><span class="pun">,</span><span class="pln"> </span><span class="str">"小猪"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">2</span><span class="pun">);</span></code></li><li class="L6"><code class="language-c#"><span class="pln">    </span><span class="typ">Config</span><span class="pln"> c4 </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">(</span><span class="lit">4</span><span class="pun">,</span><span class="pln"> </span><span class="str">"B"</span><span class="pun">,</span><span class="pln"> </span><span class="str">"小猫"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">1</span><span class="pun">);</span></code></li><li class="L7"><code class="language-c#"></code></li><li class="L8"><code class="language-c#"><span class="pln">    </span><span class="com">// 配置表中的数据默认都会添加在这个datas里面</span></code></li><li class="L9"><code class="language-c#"><span class="pln">    </span><span class="kwd">foreach</span><span class="pln"> </span><span class="pun">(</span><span class="kwd">var</span><span class="pln"> c </span><span class="kwd">in</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Config</span><span class="pun">[]</span><span class="pln"> </span><span class="pun">{</span><span class="pln"> c1</span><span class="pun">,</span><span class="pln"> c2</span><span class="pun">,</span><span class="pln"> c3</span><span class="pun">,</span><span class="pln"> c4 </span><span class="pun">})</span></code></li><li class="L0"><code class="language-c#"><span class="pln">        datas</span><span class="pun">.</span><span class="typ">Add</span><span class="pun">(</span><span class="pln">c</span><span class="pun">.</span><span class="pln">id</span><span class="pun">,</span><span class="pln"> c</span><span class="pun">);</span></code></li><li class="L1"><code class="language-c#"></code></li><li class="L2"><code class="language-c#"><span class="pln">    </span><span class="com">// 构建索引</span></code></li><li class="L3"><code class="language-c#"><span class="pln">    </span><span class="com">// 索引 a|b 的生成</span></code></li><li class="L4"><code class="language-c#"><span class="pln">    </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">string</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">string</span><span class="pun">,</span><span class="pln"> </span><span class="typ">List</span><span class="str">&lt;int&gt;</span><span class="pun">&gt;&gt;</span><span class="pln"> index_a_b </span><span class="pun">=</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">string</span><span class="pun">,</span><span class="pln"> </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">string</span><span class="pun">,</span><span class="pln"> </span><span class="typ">List</span><span class="str">&lt;int&gt;</span><span class="pun">&gt;&gt;();</span></code></li><li class="L5"><code class="language-c#"><span class="pln">    </span><span class="kwd">foreach</span><span class="pln"> </span><span class="pun">(</span><span class="kwd">var</span><span class="pln"> c </span><span class="kwd">in</span><span class="pln"> datas</span><span class="pun">.</span><span class="typ">Values</span><span class="pun">)</span></code></li><li class="L6"><code class="language-c#"><span class="pln">    </span><span class="pun">{</span></code></li><li class="L7"><code class="language-c#"><span class="pln">        </span><span class="kwd">if</span><span class="pln"> </span><span class="pun">(!</span><span class="pln">index_a_b</span><span class="pun">.</span><span class="typ">ContainsKey</span><span class="pun">(</span><span class="pln">c</span><span class="pun">.</span><span class="pln">a</span><span class="pun">))</span></code></li><li class="L8"><code class="language-c#"><span class="pln">            index_a_b</span><span class="pun">.</span><span class="typ">Add</span><span class="pun">(</span><span class="pln">c</span><span class="pun">.</span><span class="pln">a</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">Dictionary</span><span class="pun">&lt;</span><span class="kwd">string</span><span class="pun">,</span><span class="pln"> </span><span class="typ">List</span><span class="str">&lt;int&gt;</span><span class="pun">&gt;());</span></code></li><li class="L9"><code class="language-c#"><span class="pln">        </span><span class="kwd">if</span><span class="pln"> </span><span class="pun">(!</span><span class="pln">index_a_b</span><span class="pun">[</span><span class="pln">c</span><span class="pun">.</span><span class="pln">a</span><span class="pun">].</span><span class="typ">ContainsKey</span><span class="pun">(</span><span class="pln">c</span><span class="pun">.</span><span class="pln">b</span><span class="pun">))</span></code></li><li class="L0"><code class="language-c#"><span class="pln">            index_a_b</span><span class="pun">[</span><span class="pln">c</span><span class="pun">.</span><span class="pln">a</span><span class="pun">].</span><span class="typ">Add</span><span class="pun">(</span><span class="pln">c</span><span class="pun">.</span><span class="pln">b</span><span class="pun">,</span><span class="pln"> </span><span class="kwd">new</span><span class="pln"> </span><span class="typ">List</span><span class="str">&lt;int&gt;</span><span class="pun">());</span></code></li><li class="L1"><code class="language-c#"></code></li><li class="L2"><code class="language-c#"><span class="pln">        index_a_b</span><span class="pun">[</span><span class="pln">c</span><span class="pun">.</span><span class="pln">a</span><span class="pun">][</span><span class="pln">c</span><span class="pun">.</span><span class="pln">b</span><span class="pun">].</span><span class="typ">Add</span><span class="pun">(</span><span class="pln">c</span><span class="pun">.</span><span class="pln">id</span><span class="pun">);</span></code></li><li class="L3"><code class="language-c#"><span class="pln">    </span><span class="pun">}</span></code></li><li class="L4"><code class="language-c#"></code></li><li class="L5"><code class="language-c#"><span class="pln">    </span><span class="com">// 有了 a|b 这个索引，可以快速查询数据</span></code></li><li class="L6"><code class="language-c#"><span class="pln">    </span><span class="com">// a的值是“A”的数据，他们的b有哪些值</span></code></li><li class="L7"><code class="language-c#"><span class="pln">    </span><span class="kwd">foreach</span><span class="pln"> </span><span class="pun">(</span><span class="kwd">var</span><span class="pln"> item </span><span class="kwd">in</span><span class="pln"> index_a_b</span><span class="pun">[</span><span class="str">"A"</span><span class="pun">])</span></code></li><li class="L8"><code class="language-c#"><span class="pln">        </span><span class="typ">Console</span><span class="pun">.</span><span class="typ">WriteLine</span><span class="pun">(</span><span class="str">"a=A，b="</span><span class="pln"> </span><span class="pun">+</span><span class="pln"> item</span><span class="pun">.</span><span class="typ">Key</span><span class="pln"> </span><span class="pun">+</span><span class="pln"> </span><span class="str">", 有这些条配置（id列表）"</span><span class="pln"> </span><span class="pun">+</span><span class="pln"> item</span><span class="pun">.</span><span class="typ">Value</span><span class="pun">);</span></code></li><li class="L9"><code class="language-c#"><span class="pln">    </span><span class="com">// 直接查找a=A,b=小猫的数据条目</span></code></li><li class="L0"><code class="language-c#"><span class="pln">    </span><span class="typ">Console</span><span class="pun">.</span><span class="typ">WriteLine</span><span class="pun">(</span><span class="pln">index_a_b</span><span class="pun">[</span><span class="str">"A"</span><span class="pun">][</span><span class="str">"小猫"</span><span class="pun">]);</span><span class="com">// 这里是个List&lt;int&gt; 满足条件的id列表</span></code></li><li class="L1"><code class="language-c#"></code></li><li class="L2"><code class="language-c#"><span class="pun">}</span></code></li></ol></pre><div class="md-section-divider"></div><h2 data-anchor-id="le4f" id="lua代码示例">lua代码示例</h2><ul data-anchor-id="2ntg">
+<li><p>查找数据</p>
+
+<pre class="prettyprint linenums prettyprinted" style=""><ol class="linenums"><li class="L0"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">获取一张表</span></code></li><li class="L1"><code class="language-lua"><span class="kwd">local</span><span class="pln"> sheet </span><span class="pun">=</span><span class="pln"> datasheet</span><span class="pun">.</span><span class="kwd">get</span><span class="pun">(</span><span class="str">"role"</span><span class="pun">)</span></code></li><li class="L2"><code class="language-lua"></code></li><li class="L3"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">根据</span><span class="pln">id</span><span class="pun">在</span><span class="pln">role</span><span class="pun">表查找一条数据</span></code></li><li class="L4"><code class="language-lua"><span class="kwd">local</span><span class="pln"> config </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="kwd">get</span><span class="pun">(</span><span class="pln">id</span><span class="pun">)</span></code></li><li class="L5"><code class="language-lua"></code></li><li class="L6"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">根据索引查找数据</span></code></li><li class="L7"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">如果是唯一索引并且确定索引存在，可以直接通过索引拿到这条配置</span></code></li><li class="L8"><code class="language-lua"><span class="kwd">local</span><span class="pln"> config </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="pln">getconfig</span><span class="pun">(</span><span class="str">"type|subtype"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">1</span><span class="pun">,</span><span class="pln"> </span><span class="lit">2</span><span class="pun">)</span><span class="pln"> </span><span class="pun">--找到</span><span class="pln">type</span><span class="pun">=</span><span class="lit">1</span><span class="pun">，</span><span class="pln">subtype</span><span class="pun">=</span><span class="lit">2</span><span class="pun">的一条数据</span></code></li><li class="L9"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">如果索引不是唯一索引，直接使用</span><span class="pln">getconfig</span><span class="pun">会报错</span></code></li><li class="L0"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">通过</span><span class="pln">hasconfig</span><span class="pun">可以进行唯一索引判定</span></code></li><li class="L1"><code class="language-lua"><span class="kwd">local</span><span class="pln"> has</span><span class="pun">,</span><span class="pln"> config </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="pln">hasconfig</span><span class="pun">(</span><span class="str">"type|subtype"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">1</span><span class="pun">,</span><span class="pln"> </span><span class="lit">2</span><span class="pun">)</span></code></li><li class="L2"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">如果不是唯一索引，需要使用</span><span class="pln">getgroup</span><span class="pun">接口</span></code></li><li class="L3"><code class="language-lua"><span class="kwd">local</span><span class="pln"> configids </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="pln">getgroup</span><span class="pun">(</span><span class="str">"type|subtype"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">1</span><span class="pun">,</span><span class="pln"> </span><span class="lit">2</span><span class="pun">)</span></code></li><li class="L4"><code class="language-lua"><span class="kwd">for</span><span class="pln"> _</span><span class="pun">,</span><span class="pln"> id </span><span class="kwd">in</span><span class="pln"> ipairs</span><span class="pun">(</span><span class="pln">configids</span><span class="pun">)</span><span class="pln"> </span><span class="kwd">do</span></code></li><li class="L5"><code class="language-lua"><span class="pln">    </span><span class="kwd">local</span><span class="pln"> config </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="kwd">get</span><span class="pun">(</span><span class="pln">id</span><span class="pun">)</span></code></li><li class="L6"><code class="language-lua"><span class="kwd">end</span></code></li><li class="L7"><code class="language-lua"></code></li><li class="L8"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">[[</span></code></li><li class="L9"><code class="language-lua"><span class="pln">getgroup</span><span class="pun">的另外一种用法</span></code></li><li class="L0"><code class="language-lua"><span class="pun">前面在使用</span><span class="pln">getgroup</span><span class="pun">时候，索引中键的数量与索引值的数量都是相等的</span></code></li><li class="L1"><code class="language-lua"><span class="pun">不相等的时候，返回的不是数组形式</span><span class="pln">table</span><span class="pun">，是</span><span class="pln">key</span><span class="pun">-</span><span class="pln">value</span><span class="pun">形式的</span></code></li><li class="L2"><code class="language-lua"><span class="pln">key</span><span class="pun">是下一个索引键的值，</span><span class="pln">value</span><span class="pun">是下一级的</span><span class="pln">table</span></code></li><li class="L3"><code class="language-lua"><span class="pun">]]</span></code></li><li class="L4"><code class="language-lua"><span class="kwd">local</span><span class="pln"> type1configs</span><span class="pun">,</span><span class="pln"> count </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="pln">getgroup</span><span class="pun">(</span><span class="str">"type|subtype"</span><span class="pun">,</span><span class="pln"> </span><span class="lit">1</span><span class="pun">)</span></code></li><li class="L5"><code class="language-lua"><span class="kwd">print</span><span class="pun">(</span><span class="str">"在 type|subtype 索引中，type值为1时，有"</span><span class="pln"> </span><span class="pun">..</span><span class="pln"> count </span><span class="pun">..</span><span class="pln"> </span><span class="str">"种不同的subtype值"</span><span class="pun">)</span></code></li><li class="L6"><code class="language-lua"><span class="kwd">for</span><span class="pln"> subtype</span><span class="pun">,</span><span class="pln"> ids </span><span class="kwd">in</span><span class="pln"> pairs</span><span class="pun">(</span><span class="pln">type1configs</span><span class="pun">)</span><span class="pln"> </span><span class="kwd">do</span></code></li><li class="L7"><code class="language-lua"><span class="pln">    </span><span class="kwd">for</span><span class="pln"> _</span><span class="pun">,</span><span class="pln"> id </span><span class="kwd">in</span><span class="pln"> ipairs</span><span class="pun">(</span><span class="pln">ids</span><span class="pun">)</span><span class="pln"> </span><span class="kwd">do</span></code></li><li class="L8"><code class="language-lua"><span class="pln">        </span><span class="kwd">local</span><span class="pln"> config </span><span class="pun">=</span><span class="pln"> sheet</span><span class="pun">:</span><span class="kwd">get</span><span class="pun">(</span><span class="pln">id</span><span class="pun">)</span></code></li><li class="L9"><code class="language-lua"><span class="pln">    </span><span class="kwd">end</span></code></li><li class="L0"><code class="language-lua"><span class="kwd">end</span></code></li></ol></pre></li>
+<li><p>使用公式</p>
+
+<pre class="prettyprint linenums prettyprinted" style=""><ol class="linenums"><li class="L0"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">新建一个公式</span></code></li><li class="L1"><code class="language-lua"><span class="kwd">local</span><span class="pln"> formula </span><span class="pun">=</span><span class="pln"> formulasheet</span><span class="pun">.</span><span class="pln">create</span><span class="pun">(</span><span class="str">"taskrandom"</span><span class="pun">)</span></code></li><li class="L2"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">修改输入值</span></code></li><li class="L3"><code class="language-lua"><span class="pln">formula</span><span class="pun">.</span><span class="kwd">typeid</span><span class="pln"> </span><span class="pun">=</span><span class="pln"> </span><span class="lit">1</span></code></li><li class="L4"><code class="language-lua"><span class="pln">formula</span><span class="pun">.</span><span class="pln">count </span><span class="pun">=</span><span class="pln"> </span><span class="lit">1</span></code></li><li class="L5"><code class="language-lua"><span class="pln">formula</span><span class="pun">.</span><span class="pln">rand </span><span class="pun">=</span><span class="pln"> </span><span class="lit">0.2</span></code></li><li class="L6"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">看一下输出结果</span></code></li><li class="L7"><code class="language-lua"><span class="kwd">print</span><span class="pun">(</span><span class="pln">formula</span><span class="pun">.</span><span class="pln">taskid</span><span class="pun">)</span></code></li><li class="L8"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">再修改输入</span></code></li><li class="L9"><code class="language-lua"><span class="pln">formula</span><span class="pun">.</span><span class="pln">rand </span><span class="pun">=</span><span class="pln"> </span><span class="lit">0.3</span></code></li><li class="L0"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">再看一下输入结果</span></code></li><li class="L1"><code class="language-lua"><span class="kwd">print</span><span class="pun">(</span><span class="pln">formula</span><span class="pun">.</span><span class="pln">taskid</span><span class="pun">)</span></code></li><li class="L2"><code class="language-lua"><span class="pun">--</span><span class="pln"> </span><span class="pun">枚举结果，以前面的截图为例</span></code></li><li class="L3"><code class="language-lua"><span class="kwd">local</span><span class="pln"> e </span><span class="pun">=</span><span class="pln"> formula</span><span class="pun">:</span><span class="pln">enumerator</span><span class="pun">(</span><span class="str">"Rewards"</span><span class="pun">)</span></code></li><li class="L4"><code class="language-lua"><span class="kwd">while</span><span class="pln"> e</span><span class="pun">.</span><span class="pln">movenext</span><span class="pun">()</span><span class="pln"> </span><span class="kwd">do</span></code></li><li class="L5"><code class="language-lua"><span class="pln">    </span><span class="kwd">print</span><span class="pun">(</span><span class="pln">e</span><span class="pun">.</span><span class="kwd">group</span><span class="pun">,</span><span class="pln"> e</span><span class="pun">.</span><span class="pln">item</span><span class="pun">,</span><span class="pln"> e</span><span class="pun">.</span><span class="pln">count</span><span class="pun">,</span><span class="pln"> e</span><span class="pun">.</span><span class="pln">weight</span><span class="pun">)</span></code></li><li class="L6"><code class="language-lua"><span class="kwd">end</span></code></li></ol></pre></li>
+</ul><div class="md-section-divider"></div><h2 data-anchor-id="vp83" id="go代码示例">go代码示例</h2><ul data-anchor-id="m2un">
+<li><p>查找数据</p>
+
+<pre class="prettyprint linenums prettyprinted" style=""><ol class="linenums"><li class="L0"><code class="language-go"><span class="com">// 根据id在role表查找一条数据</span></code></li><li class="L1"><code class="language-go"><span class="pln">conf </span><span class="pun">:=</span><span class="pln"> config</span><span class="pun">.</span><span class="typ">GetRoleTable</span><span class="pun">().</span><span class="typ">Get</span><span class="pun">(</span><span class="pln">id</span><span class="pun">)</span></code></li><li class="L2"><code class="language-go"><span class="com">// 根据索引查找一条数据，限制与lua相同</span></code></li><li class="L3"><code class="language-go"><span class="pln">conf </span><span class="pun">:=</span><span class="pln"> config</span><span class="pun">.</span><span class="typ">GetRoleTable</span><span class="pun">().</span><span class="typ">Get_type_subtype</span><span class="pun">(</span><span class="pln">t</span><span class="pun">,</span><span class="pln"> st</span><span class="pun">)</span></code></li><li class="L4"><code class="language-go"><span class="com">// 其他的查询方式，go语言强制类型，不方便封装接口，直接通过Group属性获取sheet的索引数据</span></code></li><li class="L5"><code class="language-go"><span class="pln">config</span><span class="pun">.</span><span class="typ">GetRoleTable</span><span class="pun">().</span><span class="typ">Group</span></code></li></ol></pre></li>
+<li><p>使用公式</p>
+
+<pre class="prettyprint linenums prettyprinted" style=""><ol class="linenums"><li class="L0"><code class="language-go"><span class="com">// 新建一个公式</span></code></li><li class="L1"><code class="language-go"><span class="pln">formula </span><span class="pun">:=</span><span class="pln"> config</span><span class="pun">.</span><span class="typ">NewTaskrandomFormula</span><span class="pun">()</span></code></li><li class="L2"><code class="language-go"><span class="com">// 修改输入值</span></code></li><li class="L3"><code class="language-go"><span class="pln">formula</span><span class="pun">.</span><span class="typ">SetTypeid</span><span class="pun">(</span><span class="lit">1</span><span class="pun">)</span></code></li><li class="L4"><code class="language-go"><span class="pln">formula</span><span class="pun">.</span><span class="typ">SetCount</span><span class="pun">(</span><span class="lit">1</span><span class="pun">)</span></code></li><li class="L5"><code class="language-go"><span class="pln">formula</span><span class="pun">.</span><span class="typ">SetRand</span><span class="pun">(</span><span class="lit">0.2</span><span class="pun">)</span></code></li><li class="L6"><code class="language-go"><span class="com">// 看一下输出结果</span></code></li><li class="L7"><code class="language-go"><span class="pln">fmt</span><span class="pun">.</span><span class="typ">Println</span><span class="pun">(</span><span class="pln">formula</span><span class="pun">.</span><span class="typ">GetTaskid</span><span class="pun">)</span></code></li><li class="L8"><code class="language-go"><span class="com">// 再修改输入</span></code></li><li class="L9"><code class="language-go"><span class="pln">formula</span><span class="pun">.</span><span class="typ">SetRand</span><span class="pun">(</span><span class="lit">0.3</span><span class="pun">)</span></code></li><li class="L0"><code class="language-go"><span class="com">// 再看一下输入结果</span></code></li><li class="L1"><code class="language-go"><span class="pln">fmt</span><span class="pun">.</span><span class="typ">Println</span><span class="pun">(</span><span class="pln">formula</span><span class="pun">.</span><span class="typ">GetTaskid</span><span class="pun">)</span></code></li><li class="L2"><code class="language-go"><span class="com">// 枚举结果，以前面的截图为例</span></code></li><li class="L3"><code class="language-go"><span class="pln">e </span><span class="pun">:=</span><span class="pln"> formula</span><span class="pun">.</span><span class="typ">GetRewardsEnumerator</span><span class="pun">()</span></code></li><li class="L4"><code class="language-go"><span class="kwd">for</span><span class="pln"> e</span><span class="pun">.</span><span class="typ">MoveNext</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span></code></li><li class="L5"><code class="language-go"><span class="pln">    fmt</span><span class="pun">.</span><span class="typ">Println</span><span class="pun">(</span><span class="pln">e</span><span class="pun">.</span><span class="typ">Group</span><span class="pun">,</span><span class="pln"> e</span><span class="pun">.</span><span class="typ">Item</span><span class="pun">,</span><span class="pln"> e</span><span class="pun">.</span><span class="typ">Couint</span><span class="pun">,</span><span class="pln"> e</span><span class="pun">.</span><span class="typ">Weight</span><span class="pun">)</span></code></li><li class="L6"><code class="language-go"><span class="pun">}</span></code></li></ol></pre></li>
+</ul></div>
+    <div class="remark-icons">
+    </div>
+</div>
+
+<!--in page preview buttons. -->
+<div class="in-page-preview-buttons in-page-preview-buttons-full-reader">
+    <ul>
+        <li class="in-page-button dropdown" id="preview-toc-button" title="内容目录 Ctrl+Alt+O">
+            <span class="dropdown-toggle icon-list" data-toggle="dropdown"></span>
+            <div id="toc-list" class="dropdown-menu theme pull-right"> <!-- Add theme means this element will be changed when apply theme color. -->
+                <h3>内容目录</h3>
+                <hr>
+                <div class="table-of-contents"></div>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<div id="reader-full-toolbar" class="reader-full-toolbar-shown" style="padding-top: 0;">
+    <ul id="reader-full-toolbar-home" class="preview-button-row">
+        <li class="preview-button-full-reader" id="preview-editor-button" title="撰写文本 Ctrl+Alt+M">
+            <span class="icon-pencil"></span>
+        </li>
+    </ul>
+    <ul id="preview-button-row" class="preview-button-row">
+        <li class="preview-button-full-reader dropdown" id="preview-list-button" title="文本列表 Ctrl+Alt+F">
+            <span class="dropdown-toggle icon-reorder" data-toggle="dropdown"></span>
+            <ul id="file-list" class="dropdown-menu theme-black pull-right" role="menu">
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="TinyTeam">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">TinyTeam</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:34:14.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839418" title="【已发布】 2017-08-04T09:34:14.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839418">TTConsole</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="config">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">config</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-09-13T08:17:35.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/883187" title="【已发布】 2017-09-30T07:27:52.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="883187" class="whiter-on-black">SuperConfig</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="ecs">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">ecs</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:24:25.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839402" title="【已发布】 2017-08-05T10:02:56.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839402">SuperMobs.lua.ecs</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="log">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">log</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:34:14.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839418" title="【已发布】 2017-08-04T09:34:14.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839418">TTConsole</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="lua">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">lua</span></span>
+                            <span class="tag-count pull-right">3</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:39:28.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839423" title="【已发布】 2017-09-13T09:30:41.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839423">SuperMobs.lua.ui</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:24:25.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839402" title="【已发布】 2017-08-05T10:02:56.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839402">SuperMobs.lua.ecs</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:21:19.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839400" title="【已发布】 2017-08-11T08:29:15.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839400">supermobs.lua.utils</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="op">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">op</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-09T01:39:41.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839543" title="【已发布】 2017-08-09T01:57:13.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839543">游戏后台功能</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="supermobs">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">supermobs</span></span>
+                            <span class="tag-count pull-right">5</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-09T01:39:41.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839543" title="【已发布】 2017-08-09T01:57:13.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839543">游戏后台功能</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:39:28.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839423" title="【已发布】 2017-09-13T09:30:41.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839423">SuperMobs.lua.ui</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:31:45.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839385" title="【已发布】 2017-09-13T08:24:41.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839385">链接归总</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:24:25.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839402" title="【已发布】 2017-08-05T10:02:56.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839402">SuperMobs.lua.ecs</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:21:19.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839400" title="【已发布】 2017-08-11T08:29:15.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839400">supermobs.lua.utils</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="ui">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">ui</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:39:28.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839423" title="【已发布】 2017-09-13T09:30:41.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839423">SuperMobs.lua.ui</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="unity">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">unity</span></span>
+                            <span class="tag-count pull-right">2</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:34:14.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839418" title="【已发布】 2017-08-04T09:34:14.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839418">TTConsole</span>
+        </a>
+    </li>
+
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:24:25.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839402" title="【已发布】 2017-08-05T10:02:56.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839402">SuperMobs.lua.ecs</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="utils">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">utils</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:21:19.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839400" title="【已发布】 2017-08-11T08:29:15.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839400">supermobs.lua.utils</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="主页">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">主页</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-08-04T09:31:45.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/839385" title="【已发布】 2017-09-13T08:24:41.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="839385">链接归总</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+                    <li>
+                    <ul class="tag-list">
+                        <li class="tag-item item" tag-name="未分类">
+                            <span class="pull-left"><i class="icon-tag"></i><span class="tag-name">未分类</span></span>
+                            <span class="tag-count pull-right">1</span>
+                            <div class="clearfix"></div>
+                        </li>
+                            
+    <li class="file-item item" file-created-date="2017-07-31T09:17:29.000000Z">
+        <a tabindex="-1" href="https://www.zybuluo.com/leviyuan/note/833993" title="【已发布】 2017-08-04T09:48:20.000000Z">
+        <i class="icon-share-sign"></i>
+        <span id="833993">SuperMobs.lua</span>
+        </a>
+    </li>
+
+                    </ul>
+                    </li>
+            </ul>
+            <ul id="file-list-topbar" class="dropdown-menu theme-black pull-right" role="menu">
+                <li id="search-file-bar">
+                    <i class="icon-search icon-large"></i>
+                    <input type="text" id="search-file-textbox" placeholder="搜索 leviyuan 的文稿标题， * 显示全部">
+                    <i class="icon-level-down icon-rotate-90 icon-large"></i>
+                </li>
+                <li id="tag-file-bar">
+                    以下【标签】将用于标记这篇文稿：
+                </li>
+            </ul>
+        </li>
+        <li class="preview-button-full-reader" id="preview-theme-button" title="主题切换 Ctrl+Alt+Y">
+            <span class="icon-adjust"></span>
+        </li>
+        <li class="preview-button-full-reader" id="preview-fullscreen-button" title="全屏模式 F11">
+            <span class="icon-fullscreen"></span>
+        </li>
+        <li class="preview-button-full-reader wmd-spacer"></li>
+        <li class="preview-button-full-reader dropdown" id="preview-about-button" title="关于本站">
+            <span class="dropdown-toggle icon-info-sign" data-toggle="dropdown" data-hover="dropdown" data-delay="100" data-close-others="true"></span>
+            <ul id="about-menu" class="dropdown-menu theme-black pull-right" role="menu">
+                <li title="下载全平台客户端"><a tabindex="-1" href="https://www.zybuluo.com/cmd" target="_blank"><i class="icon-laptop"></i>下载客户端</a></li>
+                <li title="@ghosert"><a tabindex="-1" href="http://www.weibo.com/ghosert" target="_blank"><i class="icon-weibo"></i>关注开发者</a></li>
+                <li title=""><a tabindex="-1" href="https://github.com/ghosert/cmd-editor/issues" target="_blank"><i class="icon-github-alt"></i>报告问题，建议</a></li>
+                <li title="support@zybuluo.com"><a tabindex="-1" href="mailto:support@zybuluo.com" target="_blank"><i class="icon-envelope"></i>联系我们</a></li>
+            </ul>
+        </li>
+    </ul>
+</div>
+<ul id="reader-full-toolbar-tail" class="reader-full-toolbar-tail-shown">
+    <li class="preview-button-full-reader" id="preview-hidden-button" title="隐藏工具栏 Ctrl+Alt+I">
+        <span class="icon-chevron-sign-right"></span>
+    </li>
+</ul>
+
+
+
+
+
+
+<!-- side remark, hidden when loading. -->
+<div class="remark-list side-remark-hidden">
+    <div class="remark-items">
+    </div>
+    <div class="leave-remark unselectable"><span class="icon-plus-sign-alt"></span><span>添加新批注</span></div>
+    <div class="new-remark">
+        <!-- clone the template $('.new-remark-reply').html() to here.-->
+        <div class="remark-notice">在作者公开此批注前，只有你和作者可见。</div>
+    </div>
+</div>
+
+<!-- template for new remark/reply -->
+<div class="new-remark-reply side-remark-hidden">
+    <div class="remark-head"><a><img src="https://www.zybuluo.com/static/img/default-head.jpg"></a></div>
+    <div class="remark-author unselectable"></div>
+    <div class="remark-editor" contenteditable="true" spellcheck="false"></div>
+    <!-- this will be filled up by js.
+    <div class="inline-error">402/400</div> for new remark
+    <div class="inline-error">202/200</div> for new reply
+    -->
+    <div class="remark-footer unselectable">
+        <button class="remark-save btn-link">保存</button>
+        <button class="remark-cancel btn-link">取消</button>
+    </div>
+</div>
+
+<!-- template for .remark-item/.remark-reply -->
+<div class="remark-item-reply side-remark-hidden">
+    <div class="remark-head"><a><img src="https://www.zybuluo.com/static/img/default-head.jpg"></a></div>
+    <div class="remark-author unselectable"></div>
+    <div class="remark-delete-link unselectable"><span class="icon-remove"></span></div> <!--This is mainly for deleting remark-reply, shown when author/remark hovering on remark-reply.-->
+    <div class="remark-editor" contenteditable="true" spellcheck="false"></div>
+    <!-- this will be filled up by js.
+    <div class="inline-error">402/400</div> for new remark
+    <div class="inline-error">202/200</div> for new reply
+    -->
+    <div class="remark-footer unselectable">
+        <button class="remark-edit btn-link">修改</button>
+        <button class="remark-save btn-link">保存</button>
+        <button class="remark-cancel btn-link">取消</button>
+        <button class="remark-delete btn-link">删除</button>
+    </div>
+</div>
+
+<!-- template for remark-item-->
+<div class="remark-item side-remark-hidden" data-rand-id="" data-version-id="">
+    <div class="remark-published-link unselectable"><span class="icon-link icon-rotate-90"></span></div>
+    <ul class="remark-options theme unselectable">
+        <li class="remark-private"><span class="icon-eye-close"></span><span>私有</span></li>
+        <li class="remark-public"><span class="icon-group"></span><span>公开</span></li>
+        <li class="remark-delete"><span class="icon-remove"></span><span>删除</span></li>
+    </ul>
+
+    <!-- clone the template $('.remark-item-reply').html() to here.-->
+
+    <button class="remark-reply-view-more btn-link">查看更早的 5 条回复</button>
+    <div class="remark-replies">
+        <!--
+        <div class="remark-reply">
+            clone the template $('.remark-item-reply').html() to here.
+        </div>
+        -->
+    </div>
+
+    <div class="leave-reply unselectable"><span>回复批注</span></div>
+    <div class="new-reply">
+        <!-- clone the template $('.new-remark-reply').html() to here.-->
+    </div>
+</div>
+
+<!-- jiawzhang NOTICE: .remark-icons will be put to mdeditor.mako and user_note.mako, where next to .wmd-preview -->
+<!-- <div class="remark-icons"></div> -->
+
+<!-- template for remark-icon -->
+<div class="remark-icon unselectable side-remark-hidden remark-icon-empty" style="display: none;">
+    <span class="icon-stack">
+        <i class="glyph-comment"></i>
+        <span class="remark-count"></span>
+    </span>
+</div>
+
+
+<!-- canvas, hidden always, this is used to convert svg to canvas and then convert canvas to png. -->
+<canvas id="svg-canvas-image" class="editor-reader-hidden-always"></canvas>
+
+<!-- This is the image panel to hold enlarged image/svg. -->
+<div id="large-image-panel">
+    <img id="large-image">
+</div>
+
+
+    
+
+
+    <!-- Hidden Popup Modal -->
+    <div id="notification-popup-window" class="modal hide fade theme" tabindex="-1" role="dialog" aria-labelledby="notification-title" aria-hidden="true">
+        <div class="modal-header theme">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="notification-title">通知</h3>
+        </div>
+        <div class="modal-body theme">
+            <p></p>
+        </div>
+        <div class="modal-footer theme">
+            <button id="notification-cancel" class="btn" data-dismiss="modal" aria-hidden="true">取消</button>
+            <button id="notification-confirm" class="btn btn-primary">确认</button>
+        </div>
+    </div>
+
+    <!-- zybuluo's foot -->
+
+    <script src="./SuperConfig_files/288313bb.base.lib.min.js"></script></body></html>
