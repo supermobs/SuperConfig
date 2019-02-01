@@ -1,7 +1,7 @@
 #!/bin/bash
 dir="$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
 cd $dir
-mono --arch=32 exporter.exe nowindow cache
+mono --arch=32 exporter.exe nowindow cache out_ts
 #mono --arch=32 exporter.exe nowindow cache label-1
 
 echo 编译完毕
