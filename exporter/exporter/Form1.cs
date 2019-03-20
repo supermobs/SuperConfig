@@ -67,7 +67,7 @@ namespace exporter
         }
 
         const int PATH_LEN = 8;
-        List<string> paths = new List<string>(PATH_LEN);
+        List<string> paths = new List<string>();
         List<List<string>> labellist = new List<List<string>>();
         List<string> labelNames = new List<string>();
         string pathConfigFile = "pathconfig";
@@ -79,11 +79,11 @@ namespace exporter
             if (File.Exists(pathConfigFile))
             {
                 var ps = File.ReadAllLines(pathConfigFile);
-                paths.AddRange(ps);
-                for (int i = paths.Count-1; i < PATH_LEN; i++)
-                {
-                    paths.Add("");                    
-                }
+                paths = new List<string>(ps);
+            }
+            for (int i = paths.Count - 1; i < PATH_LEN; i++)
+            {
+                paths.Add("");
             }
 
             string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
@@ -125,51 +125,51 @@ namespace exporter
                 Console.WriteLine("读取xlsx, " + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
 
                 // * lua
-                if(_isOutLua)
+                if (_isOutLua)
                 {
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))) return false;
-                Console.WriteLine("lua公式, " + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetLua))) return false;
+                    Console.WriteLine("lua公式, " + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
 
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ExportLua(paths[1]))) return false;
-                Console.WriteLine("导出lua文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ExportLua(paths[1]))) return false;
+                    Console.WriteLine("导出lua文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
                 }
 
                 // * go
-                if(_isOutGo)
+                if (_isOutGo)
                 {
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))) return false;
-                Console.WriteLine("go公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetGo))) return false;
+                    Console.WriteLine("go公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
 
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ExportGo(paths[2], paths[3]))) return false;
-                Console.WriteLine("导出go文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ExportGo(paths[2], paths[3]))) return false;
+                    Console.WriteLine("导出go文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
                 }
 
                 // * c#
-                if(_isOutCs)
+                if (_isOutCs)
                 {
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetCS))) return false;
-                Console.WriteLine("c#公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetCS))) return false;
+                    Console.WriteLine("c#公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
 
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ExportCS(paths[4], paths[5]))) return false;
-                Console.WriteLine("导出c#文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ExportCS(paths[4], paths[5]))) return false;
+                    Console.WriteLine("导出c#文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
                 }
 
                 // * typescript
-                if(_isOutTs)
+                if (_isOutTs)
                 {
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetTS))) return false;
-                Console.WriteLine("ts公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ReadFormulaXlsx(Exporter.DealWithFormulaSheetTS))) return false;
+                    Console.WriteLine("ts公式," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
 
-                start = DateTime.Now;
-                if (!CheckError(Exporter.ExportTS(paths[6], paths[7]))) return false;
-                Console.WriteLine("导出ts文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                    start = DateTime.Now;
+                    if (!CheckError(Exporter.ExportTS(paths[6], paths[7]))) return false;
+                    Console.WriteLine("导出ts文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
                 }
 
                 Cache.SaveCache();
@@ -189,7 +189,7 @@ namespace exporter
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            labels.AddRange(new Label[] { label1, label2, label3, label4 ,label_cs,label_cscfg,label_ts,label_tscfg});
+            labels.AddRange(new Label[] { label1, label2, label3, label4, label_cs, label_cscfg, label_ts, label_tscfg });
 
             for (int index = 0; index < paths.Count; index++)
             {
@@ -230,13 +230,16 @@ namespace exporter
 
         private void onBtnOutput(object sender, EventArgs e)
         {
-            for (int index = 0; index < PATH_LEN; index++)
+            if (
+                string.IsNullOrEmpty(paths[0]) ||
+                (string.IsNullOrEmpty(paths[1]) && _isOutLua) ||
+                ((string.IsNullOrEmpty(paths[2]) || string.IsNullOrEmpty(paths[3])) && _isOutGo) ||
+                ((string.IsNullOrEmpty(paths[4]) || string.IsNullOrEmpty(paths[5])) && _isOutCs) ||
+                ((string.IsNullOrEmpty(paths[6]) || string.IsNullOrEmpty(paths[7])) && _isOutTs)
+            )
             {
-                if (string.IsNullOrEmpty(paths[index]))
-                {
-                    MessageBox.Show("please set the path first!");
-                    return;
-                }
+                MessageBox.Show("please set the path first!");
+                return;
             }
 
             Cache.Init(labellist[labelSelect.SelectedIndex], divfolder.Checked ? labelNames[labelSelect.SelectedIndex].Split(':')[0] : "", cacheTog.Checked);
@@ -248,18 +251,23 @@ namespace exporter
             }
         }
 
-        void check_change(object sender, EventArgs e) {
+        void check_change(object sender, EventArgs e)
+        {
             var cb = (CheckBox)sender;
-            if(cb.Name == "isOutLua") {
+            if (cb.Name == "isOutLua")
+            {
                 _isOutLua = cb.Checked;
             }
-            else if(cb.Name == "isOutGO") {
+            else if (cb.Name == "isOutGO")
+            {
                 _isOutGo = cb.Checked;
             }
-            else if(cb.Name == "isOutCS") {
+            else if (cb.Name == "isOutCS")
+            {
                 _isOutCs = cb.Checked;
             }
-            else if(cb.Name == "isOutTS") {
+            else if (cb.Name == "isOutTS")
+            {
                 _isOutTs = cb.Checked;
             }
         }
