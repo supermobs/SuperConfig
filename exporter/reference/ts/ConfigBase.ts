@@ -75,6 +75,10 @@ namespace SuperConfig {
     private static factcache: Map<number, number> = new Map<number, number>();
     private static factmax: number = 1;
     public excelFact(a: number): number {
+      if(FormulaSheet.factmax == 0){
+        FormulaSheet.factmax = 1;
+        FormulaSheet.factcache.set(1, 1);
+      }
       // var n = a.toFixed(0)
       var n = Math.floor(a);
       if (n < 0) return 0;
