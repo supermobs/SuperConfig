@@ -263,6 +263,7 @@ namespace exporter
             mapTypeConvert.Add("number", "number");
 
             int goWriteCount = 0;
+            List<string> tabNames = new List<string>();
             List<string> loadfuncs = new List<string>();
             List<string> clearfuncs = new List<string>();
 
@@ -499,6 +500,7 @@ namespace exporter
                     File.WriteAllText(codeExportDir + "data_" + data.name + ".ts", sb.ToString());
                     Interlocked.Increment(ref goWriteCount);
                     lock (loadfuncs) loadfuncs.Add("this.Load" + tableClassName);
+                    lock (tabNames) tabNames.Add(data.name+".json");//和上文LoadJsonFunc("**.json");  格式对应
 
                     lock (results)
                         results.Add(string.Empty);
@@ -573,21 +575,31 @@ namespace exporter
 
             // 写加载
             loadfuncs.Sort();
+            tabNames.Sort();
             StringBuilder loadcode = new StringBuilder();
 
             // 扩展Config类统一获取某个表的实例对象
             loadcode.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
             loadcode.Append("namespace SuperConfig {\r\n");
+            //获取所有的配置表
+            loadcode.Append("\texport function GetAllConfig(preUrl:string) {\r\n");
+            loadcode.Append("\t\treturn [\r\n");
+            foreach (var str in tabNames)
+                //loadcode.Append("\t\t" + str + "();\r\n");
+                loadcode.Append("\t\t\t,preUrl+'" + str + "'\r\n");
+            loadcode.Append("\t\t ]\r\n");
+            loadcode.Append("\t}\r\n");
+
 
             // load all
-            loadcode.Append("\tfunction Load() {\r\n");
+            loadcode.Append("\texport function Load() {\r\n");
             foreach (var str in loadfuncs)
                 loadcode.Append("\t\t" + str + "();\r\n");
             loadcode.Append("\t}\r\n");
 
             // clear all
             clearfuncs.Sort();
-            loadcode.Append("\tfunction Clear() {\r\n");
+            loadcode.Append("\texport function Clear() {\r\n");
             foreach (var str in clearfuncs)
                 loadcode.Append("\t\t" + str + "();\r\n");
             loadcode.Append("\t}\r\n");
