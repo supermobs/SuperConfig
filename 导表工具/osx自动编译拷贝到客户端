@@ -1,0 +1,30 @@
+#!/bin/bash
+dir="$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)"
+cd $dir
+mono --arch=32 exporter.exe nowindow cache out_ts
+#mono --arch=32 exporter.exe nowindow cache label-1
+
+echo 编译完毕
+
+#cd到客户端目录删掉文件
+# cd ../../pokemon_unity/pokemon_unity/Bridge/Config
+# rm -rf Generated
+# cd $dir
+# cd ../../pokemon_unity/pokemon_unity/Assets
+# rm -rf config_data
+
+#开始拷贝
+cd $dir
+# cp -rf ../output/cs/config ../../pokemon_unity/pokemon_unity/Bridge/Config/Generated
+# cp -rf ../output/cs/config_data ../../pokemon_unity/pokemon_unity/Assets
+
+#开始拷贝服务器的配置表
+cd $dir
+# find ../../pokemon_server/bin/config -name '*.json' -exec rm {} \;
+# find ../../pokemon_server/src/config -name 'data_*.go' -exec rm {} \;
+# find ../../pokemon_server/src/config -name 'formula_*.go' -exec rm {} \;
+# cp -rf ../output/go/config/ ../../pokemon_server/src/config/
+# cp -rf ../output/go/config_data/ ../../pokemon_server/bin/config/
+
+
+echo 拷贝完毕
