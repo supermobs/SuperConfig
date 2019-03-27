@@ -297,8 +297,8 @@ namespace exporter
                     sb.Append("\tvar "+ " _" + tableClassName +":"+tableClassName+ ";\r\n");
                     sb.Append("\texport function " + " Get" + tableClassName + "()"+ ":" + tableClassName + "{\r\n");
                     sb.Append(string.Format("\t\tif({0} == null)\r\n \t\t\tLoad{1}();\r\n", "_" + tableClassName, tableClassName));
-                    sb.Append("\t\t\treturn _" + tableClassName + ";\r\n");
-                    sb.Append("\t\t}\r\n");
+                    sb.Append("\t\treturn _" + tableClassName + ";\r\n");
+                    sb.Append("\t}\r\n");
 
                     // 加载方法
                     sb.Append("\texport function Load" + tableClassName + "(){\r\n");
@@ -479,7 +479,7 @@ namespace exporter
                         for (int i = 0; i < g.Value.Length; i++)
                             sb.Append("\t\t\t\t}\r\n");
 
-                        sb.Append("\t\t\t\treturn null;\r\n");
+                        sb.Append("\t\t\treturn null;\r\n");
                         sb.Append("\t\t}\r\n");
                     }
 
@@ -584,9 +584,15 @@ namespace exporter
             //获取所有的配置表
             loadcode.Append("\texport function GetAllConfig(preUrl:string) {\r\n");
             loadcode.Append("\t\treturn [\r\n");
+
+            string pre = "";
             foreach (var str in tabNames)
+            {
                 //loadcode.Append("\t\t" + str + "();\r\n");
-                loadcode.Append("\t\t\t,preUrl+'" + str + "'\r\n");
+                loadcode.Append("\t\t\t"+ pre + "preUrl+'" + str + "'\r\n");
+                pre = ",";
+            }
+       
             loadcode.Append("\t\t ]\r\n");
             loadcode.Append("\t}\r\n");
 
