@@ -103,7 +103,13 @@ namespace exporter
                         sb.Append("\t\t\tthis.funcs.set(" + ((rownum + 1) * 1000 + colnum + 1) + " , (ins) => {\r\n");
 
                         string content = Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about);
-
+                        if(content.IndexOf("vlookup") >=0 )//前面需要导入引用的类
+                        {
+                            string[] strArr = content.Split('_');
+                            string refSheetName = strArr[1];
+                            string refName = refSheetName.Substring(0, 1).ToUpper() + refSheetName.Substring(1);
+                            content =   content.Insert(1, "Get" + refName + "Table().");
+                        }
                         // if (CodeTemplate.curlang == CodeTemplate.Langue.CS)
                         // {
                         //     content = FixFloat(content);
