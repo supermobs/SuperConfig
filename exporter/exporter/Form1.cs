@@ -172,7 +172,7 @@ namespace exporter
                     Console.WriteLine("导出ts文件," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
                 }
 
-                Cache.SaveCache();
+                //Cache.SaveCache();
                 Console.WriteLine("存储缓存");
                 return true;
             }
