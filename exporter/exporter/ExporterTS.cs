@@ -574,17 +574,17 @@ namespace exporter
             loadcode.Append("namespace SuperConfig {\r\n");
 
             // load all
-            loadcode.Append("\t function Load() {\r\n");
+            loadcode.Append("\tfunction Load() {\r\n");
             foreach (var str in loadfuncs)
-                loadcode.Append("\t" + str + "();\r\n");
-            loadcode.Append("}\r\n");
+                loadcode.Append("\t\t" + str + "();\r\n");
+            loadcode.Append("\t}\r\n");
 
             // clear all
             clearfuncs.Sort();
-            loadcode.Append("\t function Clear() {\r\n");
+            loadcode.Append("\tfunction Clear() {\r\n");
             foreach (var str in clearfuncs)
-                loadcode.Append("\t" + str + "();\r\n");
-            loadcode.Append("}\r\n");
+                loadcode.Append("\t\t" + str + "();\r\n");
+            loadcode.Append("\t}\r\n");
 
             loadcode.Append("}\r\n");
             File.WriteAllText(codeExportDir + "load.ts", loadcode.ToString());
