@@ -4,7 +4,7 @@
 namespace SuperConfig {
 
   // * 加载json的接口委托，由引擎设置
-  export var LoadJsonFunc : Function = null;
+  export var LoadJsonFunc : Function  ;
 
   export class FormulaSheetTemplate {
     public datas: Map<number, number> = new Map<number, number>();
@@ -13,10 +13,10 @@ namespace SuperConfig {
   }
 
   export class FormulaSheet extends FormulaSheetTemplate {
-    public name: string;
+    public name: string = "";
     public newdatas: Map<number, number> = new Map<number, number>();
 
-    public get(key: number): number {
+    public get(key: number): number | undefined  {
       if (this.newdatas.has(key)) {
         return this.newdatas.get(key);
       }
@@ -24,9 +24,13 @@ namespace SuperConfig {
         return this.datas.get(key);
       }
       if (this.funcs.has(key)) {
-        var v = this.funcs.get(key)(this);
-        this.newdatas.set(key, v);
-        return v;
+        var getFun =this.funcs.get(key); 
+        if(getFun){
+          var v:any = getFun(this);
+          this.newdatas.set(key, v);
+          return v;
+        }
+        return 0;
       }
       console.error(
         "no value in sheet " +
@@ -45,12 +49,15 @@ namespace SuperConfig {
       this.newdatas.set(key, val);
 
       if (this.relation.has(key)) {
-        var list = this.relation.get(key);
-        list.forEach((v, index) => {
-          if (this.newdatas.has(v)) {
-            this.newdatas.delete(v);
-          }
-        });
+        var list:number[]|undefined = this.relation.get(key);
+        if(list){
+          list.forEach((v, index) => {
+            if (this.newdatas.has(v)) {
+              this.newdatas.delete(v);
+            }
+          });
+        }
+
       }
     }
 
@@ -72,9 +79,13 @@ namespace SuperConfig {
       return a % b;
     }
 
-    private static factcache: Map<number, number> = new Map<number, number>();
-    private static factmax: number = 1;
-    public excelFact(a: number): number {
+    private static factcache: Map<number, number> =   new Map<number, number>();
+    // private static factcache:{[id:number]:number}={1:1};
+
+    private static factmax: number = 0;
+    // FormulaSheet.factcache.set(1,1);
+    
+    public excelFact(a: number): number|undefined {
       if(FormulaSheet.factmax == 0){
         FormulaSheet.factmax = 1;
         FormulaSheet.factcache.set(1, 1);
@@ -86,8 +97,11 @@ namespace SuperConfig {
         return FormulaSheet.factcache.get(n);
       }
       for (let index = FormulaSheet.factmax + 1; index <= n; index++) {
-        var val = FormulaSheet.factcache.get(index - 1) * index;
-        FormulaSheet.factcache.set(index, val);
+        var oldVal :number|undefined = FormulaSheet.factcache.get(index - 1);
+        if(oldVal){
+          var val:number = oldVal * index;
+          FormulaSheet.factcache.set(index, val);
+        }
       }
       FormulaSheet.factmax = n;
       return FormulaSheet.factcache.get(n);
