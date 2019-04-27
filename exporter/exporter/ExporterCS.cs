@@ -242,6 +242,13 @@ namespace exporter
             new DirectoryInfo(codeExportDir).GetFiles("data_*.cs").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
             new DirectoryInfo(codeExportDir).GetFiles("formula_*.cs").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
 
+            // stream加载的接口
+            Dictionary<string,string> typestream_read = new Dictionary<string, string>();
+            typestream_read.Add("int","ReadInt32");
+            typestream_read.Add("string","ReadString");
+            typestream_read.Add("double","ReadDouble");
+            typestream_read.Add("int32","ReadInt32");
+
             // 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
             typeconvert.Add("int", "int");
@@ -252,7 +259,7 @@ namespace exporter
             typeconvert.Add("[]int32", "int[]");
             typeconvert.Add("[]string", "string[]");
             typeconvert.Add("[]double", "double[]");
-            //litjson 不支持float 所以把float也先搞成double
+            typeconvert.Add("[]float", "float[]");
 
             // 索引类型转换
             Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
@@ -260,12 +267,13 @@ namespace exporter
             mapTypeConvert.Add("float", "float");
             mapTypeConvert.Add("int32", "int");
             mapTypeConvert.Add("string", "string");
-            mapTypeConvert.Add("float32", "string");
-            mapTypeConvert.Add("double", "string");
+            mapTypeConvert.Add("float32", "float");
+            mapTypeConvert.Add("double", "double");
 
             int goWriteCount = 0;
             List<string> loadfuncs = new List<string>();
             List<string> clearfuncs = new List<string>();
+            List<string> savefuncs = new List<string>();
 
             // 写公式
             foreach (var formula in formulaContents)
@@ -286,6 +294,7 @@ namespace exporter
                     string tableClassName = bigname + "Table";
                     string configClassName = bigname + "Config";
                     string groupClassName = bigname + "TableGroup";
+                    string jsonfilename = bigname.ToLower();
 
                     StringBuilder sb = new StringBuilder();
                     sb.Append("using System;\r\n");
@@ -294,10 +303,17 @@ namespace exporter
                     sb.Append("using System.Collections.Generic;\r\n");
 
                     // 使用Newtonsoft的json解析
-                    //sb.Append("using Newtonsoft.Json;\r\n");
+                    // sb.Append("#if UNITY_EDITOR\r\n");
+                    // sb.Append("using Newtonsoft.Json;\r\n");
+                    // sb.Append("#endif\r\n");
+
+                    // stream 需要io
+                    sb.Append("using System.IO;\r\n");
 
                     // 使用c#热更的引用
+                    sb.Append("#if !UNITY_EDITOR\r\n");
                     sb.Append("using SuperMobs.CoreExport;\r\n");
+                    sb.Append("#endif\r\n");
                     sb.Append("\r\n");
 
                     // 扩展Config类统一获取某个表的实例对象
@@ -312,9 +328,26 @@ namespace exporter
 
                     // 加载方法
                     sb.Append("\tpublic static void Load" + tableClassName + "(){\r\n");
-                    sb.Append(string.Format("\t\tvar json = Service.Get<ILoaderService>().LoadConfig(\"{0}\");\r\n", data.name));
+
+                    sb.Append(string.Format("\tif(_{0} != null) return;\r\n\r\n",tableClassName));
+
+                    //sb.Append(string.Format("\t\tvar json = Service.Get<ILoaderService>().LoadConfig(\"{0}\");\r\n", data.name));
+                    //sb.Append(string.Format("\t\t{0} = LitJson.JsonMapper.ToObject<{1}>(json);\r\n", "_" + tableClassName, tableClassName));
                     //sb.Append(string.Format("\t\t{0} = JsonConvert.DeserializeObject<{1}>(json);\r\n","_"+tableClassName,tableClassName));
-                    sb.Append(string.Format("\t\t{0} = LitJson.JsonMapper.ToObject<{1}>(json);\r\n", "_" + tableClassName, tableClassName));
+
+                    // ! 二进制加载方法
+                    sb.Append("\tstring filename=\"" + jsonfilename+ "\";\r\n");
+
+                    sb.Append("\t#if UNITY_EDITOR\r\n");
+                    sb.Append("\tstring js_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
+                    sb.Append("\tbyte[] bys = ExportUtils.LoadConfigBytes(js_path);\r\n");
+                    sb.Append("\t#else\r\n");
+                    sb.Append("\tbyte[] bys = Service.Get<ILoaderService>().LoadConfigBytes(filename);\r\n");
+                    sb.Append("\t#endif\r\n");
+
+                    sb.Append(string.Format("\t_{0} = new {0}();\r\n",tableClassName));
+                    sb.Append(string.Format("\t_{0}.FromBytes(bys);\r\n",tableClassName));
+
                     sb.Append("\t}\r\n");
 
                     // 清理方
@@ -323,22 +356,48 @@ namespace exporter
                     sb.Append("\t}\r\n");
                     lock (clearfuncs) clearfuncs.Add("Config.Clear" + tableClassName);
 
-                    sb.Append("}\r\n");
+                    // 保存一次stream二进制流接口
+                    sb.Append(string.Format("\tpublic static void Save{0} () {{\r\n", tableClassName));
+                    sb.Append("\tstring filename=\"" + jsonfilename+ "\";\r\n");
+                    sb.Append("\tstring js_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".json\";\r\n");
+                    sb.Append("\tstring js=ExportUtils.LoadConfig(js_path);\r\n");
+                    sb.Append(string.Format("\tvar val= Newtonsoft.Json.JsonConvert.DeserializeObject<{0}>(js);\r\n",tableClassName));
+                    sb.Append("\tvar bys=val.ToBytes();\r\n");
+                    sb.Append("\tstring save_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
+                    sb.Append("\tFile.WriteAllBytes(save_path,bys);\r\n");
+
+                    sb.Append("\tstring js_path_review=PATH_REVIEW_ASSETS_FOLDER+\"/\" + filename + \".json\";\r\n");
+                    sb.Append("\tif(File.Exists(js_path_review)){\r\n");
+                    sb.Append("\t\tjs = ExportUtils.LoadConfig(js_path_review);\r\n");
+                    sb.Append(string.Format("\t\tval = Newtonsoft.Json.JsonConvert.DeserializeObject<{0}>(js);\r\n",tableClassName));
+                    sb.Append("\t\tif(val != null) {\r\n");
+                    sb.Append("\t\t\tbys = val.ToBytes();\r\n");
+                    sb.Append("\t\t\tsave_path=PATH_REVIEW_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
+                    sb.Append("\t\t\tFile.WriteAllBytes(save_path,bys);\r\n");
+                    sb.Append("\t\t\t}\r\n");
+                    sb.Append("\t\t\telse{\r\n");
+                    sb.Append("\t\t\tDebug.LogError(\"保存二进制审核文件解析不出来:\"+filename);\r\n");
+                    sb.Append("\t\t}\r\n");
+                    sb.Append("\t}\r\n");
+                    sb.Append("\t}\r\n");
+                    lock (savefuncs) savefuncs.Add("Config.Save" + tableClassName);
+
+
+                    sb.Append("}\r\n"); // config扩展接口类结束
 
                     //------
 
                     // group class
-                    sb.Append("public class " + groupClassName + " {\r\n");
+                    sb.Append("public class " + groupClassName + " : StreamConfig " + " {\r\n");
                     foreach (var g in data.groups)
                     {
                         // --------------------------------
                         sb.Append("\tpublic ");
                         //  Dictionary<int,Dic<int,Dic<int,[]int>>>
-                        foreach (var t in g.Value)
-                            //sb.Append("Dictionary<" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
-                            //这里先全部用string 现在用litjson 在下面类型判断的时候再去是否加tostring
-                            sb.Append("Dictionary<string" + ",");
-                        //sb.Append("Dictionary<string" + ",");
+                        foreach (string t in g.Value)
+                            sb.Append("Dictionary<" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
+                            //这里先全部用string 现在用 litjson 在下面类型判断的时候再去是否加tostring
+                            // sb.Append("Dictionary<string" + ",");
                         sb.Append("int[]");
                         foreach (var t in g.Value)
                             sb.Append(">");
@@ -350,26 +409,223 @@ namespace exporter
 
                         sb.Append(gk + ";\r\n");
                         // --------------------------------
-
-
-
                         // per group value
+                    }
+
+                    // ! 根据需要跳过的某个位置的group获取类型嵌套的类型
+                    Func<int,string[],string> _func_get_group_type_by_index = (_gi,_gv) => {
+                        string gt = "";
+                        for (int i = 0; i < _gv.Length; i++)
+                        {
+                            if(i < _gi)
+                            {
+                                continue;
+                            }
+                            string t = _gv[i];
+                            gt += ("Dictionary<" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
+                            //这里先全部用string 现在用 litjson 在下面类型判断的时候再去是否加tostring
+                            // sb.Append("Dictionary<string" + ",");
+                        }
+                        gt += "int[]";
+                        for (int i = 0; i < _gv.Length; i++)
+                        {
+                            if(i < _gi)
+                            {
+                                continue;
+                            }
+                            gt += ">";
+                        }
+                        return gt;
+                    };
+                    Func<int,string[],string> _func_get_group_keytype_by_index = (_gi,_gv)=>{
+                        string gk = "";
+                        for (int i = 0; i < _gv.Length; i++)
+                        {
+                            if(i < _gi)
+                            {
+                                continue;
+                            }
+                            string t = _gv[i];
+                            gk = mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]];
+                            break;
+                        }
+                        return gk;
+                    };
+                    
+                    // ! > stream 读取
+                    sb.Append("\tpublic override void FromStream(BinaryReader br){\r\n");
+                    // 先定义一个长度
+                    sb.Append("\t\tint _count = 0;\r\n");
+
+                    foreach (var g in data.groups)
+                    {
+                        // Group的名称,合并参数后的,例如多个参数 ： a|b > a_b
+                        var gk = g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1);
+
+                        // 先获取这个group的类型
+                        string gt = _func_get_group_type_by_index(0,g.Value);
+
+                        // 初始化group长度
+                        sb.Append("\t\t_count=br.ReadInt32();\r\n");
+                        sb.Append("\t\t" + gk + "=new " + gt + "(_count);\r\n");
+                        sb.Append("\t\tfor(int i=0; i < _count; i++){\r\n");
+                        int _value_num = g.Value.Length;
+                        if(_value_num == 1)
+                        {
+                            string _k = _func_get_group_keytype_by_index(0,g.Value);
+                            sb.Append(string.Format("\t\t\t{0} k"+" = br.{1}();\r\n",_k,typestream_read[_k]));
+                            sb.Append("\t\t\tint[] v"+"=null;\r\n");
+                            sb.Append("\t\t\tReadArray(br,ref v"+");\r\n");
+                            sb.Append("\t\t\t" + gk +"[k]=v;\r\n");
+                        }
+                        else
+                        {
+                            for (int i = 0; i < _value_num; i++)
+                            {
+                                // key
+                                string _k = _func_get_group_keytype_by_index(i,g.Value);
+                                sb.Append(string.Format("\t\t\t{0} k"+i +" = br.{1}();\r\n",_k,typestream_read[_k]));
+
+                                if(i != _value_num -1)
+                                {
+                                    // 还没到最后
+                                    sb.Append("\t\t\tint _count"+i+"=br.ReadInt32();\r\n");
+                                    string _gt = _func_get_group_type_by_index(i+1,g.Value);
+                                    sb.Append("\t\t\t"+_gt + " v"+i+ " = new "+_gt+"(_count"+i+");\r\n" );
+                                    sb.Append("\t\t\tfor(int i"+i+ "=0; i"+i+" < _count"+i+"; i"+i+"++) {\r\n");
+                                } 
+                                else
+                                {
+                                    // 最后一个是int[]
+                                    sb.Append("\t\t\tint[] v"+i+"=null;\r\n");
+                                    sb.Append("\t\t\tReadArray(br,ref v"+i+");\r\n");
+                                }
+                            }
+                            // 加反括号和设置v
+                            for (int i = _value_num-1; i >= 1; i--)
+                            {
+                                sb.Append("\t\t\tv"+(i-1)+"[k"+(i)+"]=v"+(i)+";\r\n");
+                                sb.Append("}\r\n");
+                            }
+                            
+                            // 设置最外面那个字典是第一个值
+                            sb.Append("\t\t\t"+gk+"[k0]=v0;\r\n");
+                        }
+                        sb.Append("}\r\n");
                     }
                     sb.Append("}\r\n");
 
+
+                    // ! > stream 写入
+                    sb.Append("\tpublic override void ToStream(BinaryWriter bw){\r\n");
+                    foreach (var g in data.groups)
+                    {
+                        // Group的名称,合并参数后的,例如多个参数 ： a|b > a_b
+                        string gk = g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1);
+                        string gt = _func_get_group_type_by_index(0,g.Value);
+
+                        // 先写长度
+                        sb.Append(string.Format("\t\tif({0} == null) {0} = new {1}();\r\n",gk,gt));
+                        sb.Append("\t\t" + "bw.Write(" +gk + ".Count" + ");\r\n");
+                        // 开始写内容
+                        int _value_num = g.Value.Length;
+                        sb.Append("\t\tforeach(var item1 in " + gk + ") {\r\n");
+                        sb.Append("\t\tbw.Write(item1.Key);\r\n");
+                        if(_value_num == 1)
+                        {
+                            sb.Append("\t\tint[] v=item1.Value;\r\n");
+                            sb.Append("\t\tWriteArray(bw,ref v);\r\n");
+                        }
+                        else if(_value_num > 1)
+                        {
+                            sb.Append("\t\tbw.Write(item1.Value.Count);\r\n");
+                            // 需要多次foreach去写入
+                            for (int i = 2; i <= _value_num; i++)
+                            {
+                                sb.Append("\t\t\tforeach(var item" + i + " in item" + (i -1) +".Value){\r\n" );
+                                sb.Append("\t\t\tbw.Write(item" +i+ ".Key" + ");\r\n");
+                                if(i != _value_num)
+                                {
+                                    // 不是最后一个继续foreach,所以还是写长度
+                                    sb.Append("\t\t\tbw.Write(item" +i+ ".Value.Count" + ");\r\n");
+                                }
+                                else
+                                {
+                                    // 最后一个设置那个int[]了
+                                    sb.Append("\t\t\tint[] v=item"+i +".Value;\r\n");
+                                    sb.Append("\t\t\tWriteArray(bw,ref v);\r\n");
+                                }
+                            }
+
+                            // 再加那个反括号
+                            for (int i = 2; i <= _value_num; i++)
+                            {
+                                sb.Append("\t\t}\r\n");
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("the group is error value size is not morethan 1    group =" + gk);
+                        }
+                        sb.Append("\t}\r\n");
+                    }
+                    sb.Append("}\r\n");
+
+
+                    sb.Append("}\r\n");
+
                     // config class
-                    sb.Append("public class " + configClassName + " {\r\n");
+                    sb.Append("public class " + configClassName + " : StreamConfig " + " {\r\n");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
                         sb.Append("\tpublic " + typeconvert[data.types[i]] + " " + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + "; " + "// " + data.keyNames[i] + "\r\n");
                     }
+                    // ! > steam加载 读取
+                    sb.Append("\tpublic override void FromStream(BinaryReader br){\r\n");
+                    for (int i = 0; i < data.keys.Count; i++)
+                    {
+                        string t = typeconvert[data.types[i]];
+                        string n = data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1);
+                        if(t.Contains("[]"))
+                        {
+                            // 数组
+                            sb.Append("\t" + "ReadArray(br,ref " + n + ");\r\n");
+                        }
+                        else
+                        {
+                            sb.Append("\t" + n + "=br." + typestream_read[data.types[i]] + "();\r\n");
+                        }
+                    }
+                    sb.Append("}\r\n");
+                    // ! > stream 写入
+                    sb.Append("\tpublic override void ToStream(BinaryWriter bw){\r\n");
+                    for (int i = 0; i < data.keys.Count; i++)
+                    {
+                        string t = typeconvert[data.types[i]];
+                        string n = data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1);
+                        if(t.Contains("[]"))
+                        {
+                            sb.Append("\t" + "WriteArray(bw,ref " + n + ");\r\n");
+                        }
+                        else if(t.Contains("string"))
+                        {
+                            sb.Append("\tbw.Write(" + n + "!=null ? " + n + ":\"\"" + ");\r\n");
+                        }
+                        else
+                        {
+                            sb.Append("\tbw.Write(" + n + ");\r\n");
+                        }
+                    }
+                    sb.Append("}\r\n");
+
+
                     sb.Append("}\r\n");
 
                     // table class
                     sb.Append("// " + string.Join(",", data.files) + "\r\n");
-                    sb.Append("public class " + tableClassName + " {\r\n");
+                    sb.Append("public class " + tableClassName + " : StreamConfig " + " {\r\n");
                     sb.Append("\tpublic string Name;\r\n");
-                    sb.Append(string.Format("\tpublic Dictionary<string, {0}> _Datas;\r\n", configClassName));
+                    sb.Append(string.Format("\tpublic Dictionary<int, {0}> _Datas;\r\n", configClassName));
                     sb.Append(string.Format("\tpublic {0} _Group;\r\n", groupClassName));
 
                     // 写每一个group的缓存字典数据
@@ -385,11 +641,37 @@ namespace exporter
                         // --------------------------------
                     }
 
+                    // ! > stream 加载
+                    sb.Append("\tpublic override void FromStream(BinaryReader br){\r\n");
+                    sb.Append("\t\tName=br.ReadString();\r\n");
+                    sb.Append("\t\tint _datas_count=br.ReadInt32();\r\n");
+                    sb.Append(string.Format("\t\t_Datas=new Dictionary<int, {0}>(_datas_count);\r\n",configClassName));
+                    sb.Append("\t\tfor(int i=0; i < _datas_count; i++){\r\n");
+                    sb.Append("\t\tint k=br.ReadInt32();\r\n");
+                    sb.Append("\t\t" + configClassName+" cfg = new " + configClassName+"();\r\n");
+                    sb.Append("\t\tcfg.FromStream(br);\r\n");
+                    sb.Append("\t\t_Datas[k]=cfg;\r\n");
+                    sb.Append("\t}\r\n");
+                    sb.Append("\t\t_Group=new " + groupClassName+"();\r\n");
+                    sb.Append("\t\t_Group.FromStream(br);\r\n");
+                    sb.Append("}\r\n");
+
+                    // ! < stream 写入
+                    sb.Append("\tpublic override void ToStream(BinaryWriter bw){\r\n");
+                    sb.Append("\t\tbw.Write(Name);\r\n");
+                    sb.Append("\t\tbw.Write(_Datas.Count);\r\n");
+                    sb.Append("\t\tforeach(var item in _Datas){\r\n");
+                    sb.Append("\t\t\tbw.Write(item.Key);\r\n");
+                    sb.Append("\t\t\titem.Value.ToStream(bw);\r\n");
+                    sb.Append("\t}\r\n");
+                    sb.Append("\t\t_Group.ToStream(bw);\r\n");
+                    sb.Append("}\r\n");
+
                     // get config function
                     sb.Append("public " + configClassName + " Get(int id) {\r\n");
-                    sb.Append("\tstring k = id.ToString();\r\n");
+                    // ! sb.Append("\tstring k = id.ToString();\r\n");
                     sb.Append("\t" + configClassName + " ret;\r\n");
-                    sb.Append("\tif (_Datas.TryGetValue(k,out ret))\r\n");
+                    sb.Append("\tif (_Datas.TryGetValue(id,out ret))\r\n");
                     sb.Append("\t\treturn ret;\r\n");
                     sb.Append("\treturn null;\r\n");
                     sb.Append("}\r\n");
@@ -430,20 +712,24 @@ namespace exporter
                             {
                                 sb.Append("if (" + oldDictName + ".ContainsKey(");
                                 oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
-                                sb.Append(oldKeyName + ".ToString()) ){\r\n");
+                                // ! .ToString()
+                                sb.Append(oldKeyName + ") ){\r\n");
                             }
                             else
                             {
                                 string tempName = "tmp" + (i - 1);
-                                sb.Append("var " + tempName + " = " + oldDictName + "[" + oldKeyName + ".ToString()];\r\n");
+                                // ! .ToString()
+                                sb.Append("var " + tempName + " = " + oldDictName + "[" + oldKeyName + "];\r\n");
                                 sb.Append("if (" + tempName + ".ContainsKey(");
                                 oldDictName = tempName;
                                 oldKeyName = g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1);
-                                sb.Append(oldKeyName + ".ToString()) ){\r\n");
+                                // ! .ToString()
+                                sb.Append(oldKeyName + ") ){\r\n");
                             }
                         }
 
-                        sb.Append("var ids = " + oldDictName + "[" + oldKeyName + ".ToString()];\r\n");
+                        // ! .ToString()
+                        sb.Append("var ids = " + oldDictName + "[" + oldKeyName + "];\r\n");
                         sb.Append("var configs = new " + configClassName + "[ids.Length];\r\n");
                         sb.Append("for (int i = 0; i < ids.Length; i++) {\r\n");
                         sb.Append("\tvar id = ids[i];\r\n");
@@ -464,7 +750,8 @@ namespace exporter
                         if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
                             continue;
                         sb.Append("\tpublic float data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(int id) {\r\n");
-                        sb.Append("\treturn (float)(Config.Get" + tableClassName + "()._Datas[id.ToString()]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");\r\n");
+                        // ! id.ToString()
+                        sb.Append("\treturn (float)(Config.Get" + tableClassName + "()._Datas[id]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");\r\n");
                         sb.Append("}\r\n");
                     }
 
@@ -541,7 +828,7 @@ namespace exporter
             }
 
 
-            // 格式化go代码
+            // 格式化代码
             while (goWriteCount < formulaContents.Count + datas.Values.Count)
                 Thread.Sleep(10);
 
@@ -567,6 +854,13 @@ namespace exporter
             clearfuncs.Sort();
             loadcode.Append("\tpublic static void Clear() {\r\n");
             foreach (var str in clearfuncs)
+                loadcode.Append("\t" + str + "();\r\n");
+            loadcode.Append("}\r\n");
+
+            // save all
+            savefuncs.Sort();
+            loadcode.Append("\tpublic static void Save() {\r\n");
+            foreach (var str in savefuncs)
                 loadcode.Append("\t" + str + "();\r\n");
             loadcode.Append("}\r\n");
 
