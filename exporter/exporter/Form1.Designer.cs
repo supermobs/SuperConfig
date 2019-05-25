@@ -159,6 +159,7 @@
             this.cacheTog.TabIndex = 6;
             this.cacheTog.Text = "use cached";
             this.cacheTog.UseVisualStyleBackColor = true;
+            this.cacheTog.CheckedChanged += check_change;
             // 
             // isOutLua
             // 
@@ -169,6 +170,7 @@
             this.isOutLua.TabIndex = 3;
             this.isOutLua.Text = "out lua";
             this.isOutLua.UseVisualStyleBackColor = true;
+            this.isOutLua.CheckedChanged += check_change;
             // 
             // isOutGO
             // 
@@ -179,6 +181,7 @@
             this.isOutGO.TabIndex = 2;
             this.isOutGO.Text = "out go";
             this.isOutGO.UseVisualStyleBackColor = true;
+            this.isOutGO.CheckedChanged += check_change;
             // 
             // isOutCS
             // 
@@ -189,6 +192,7 @@
             this.isOutCS.TabIndex = 1;
             this.isOutCS.Text = "out cs";
             this.isOutCS.UseVisualStyleBackColor = true;
+            this.isOutCS.CheckedChanged += check_change;
             // 
             // isOutTS
             // 
@@ -199,6 +203,7 @@
             this.isOutTS.TabIndex = 0;
             this.isOutTS.Text = "out ts";
             this.isOutTS.UseVisualStyleBackColor = true;
+            this.isOutTS.CheckedChanged += check_change;
             // 
             // groupBox5
             // 

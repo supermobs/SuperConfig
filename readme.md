@@ -5,6 +5,9 @@
 ## TestCase
 如果直接运行build里面的快捷可执行文件的话，需要修改pathconfig文件里面的路径为自己的目录路径，实际上对应exporter.exe界面的路径
 
+例子参考
+https://github.com/superzys/SuperConfigDemo.git
+
 ## excel表
 1、文件名随意 
 

@@ -1,2 +1,2 @@
-cd ../../../tools/excel_exporter
+cd ../build
 mono exporter.exe nowindow
