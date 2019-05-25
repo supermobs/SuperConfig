@@ -7,6 +7,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using UnityEngine;
 
 /// <summary>
@@ -14,18 +16,44 @@ using UnityEngine;
 /// </summary>
 public partial class Config
 {
-    // public static string GetClientTip(string label)
-    // {
-    //     var ls = Config.GetClientTipTable().Get_name(label);
-    //     if(ls != null && ls.Length > 0)
-    //     {
-    //         return ls[0].Tip;
-    //     }
-    //     else
-    //     {
-    //         return "";
-    //     }
-    // }
+    // 游戏用到的配置表json存放目录
+    const string PATH_ASSETS_FOLDER = "Assets/config_data";
+
+    // 审核版本配置表对应存放目录
+    const string PATH_REVIEW_ASSETS_FOLDER = "Assets/config_data/review";
+
+    /// <summary>
+    /// 获取客户端提示表的tip
+    /// </summary>
+    public static string GetClientTip(string label)
+    {
+        var ls = Config.GetClientTipTable().Get_name(label);
+        if(ls != null && ls.Length > 0)
+        {
+            return ls[0].Tip;
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    /// <summary>
+    /// 通过副本玩法标签获取它的玩法名称
+    /// ! 可能有多语言考虑，在表里配置
+    /// </summary>
+    public static string GetFubenTitleName(string fb)
+    {
+        var ls = Config.GetFuncNameTable().Get_name(fb);
+        if(ls != null && ls.Length > 0)
+        {
+            return ls[0].Tip;
+        }
+        else
+        {
+            return "";
+        }
+    }
 }
 
 public struct SheetCell
@@ -39,6 +67,14 @@ public class FormulaSheetTemplate
     public Dictionary<int, float> datas = new Dictionary<int, float>();
     public Dictionary<int, int[]> relation = new Dictionary<int, int[]>();
     public Dictionary<int, Func<FormulaSheet, float>> funcs = new Dictionary<int, Func<FormulaSheet, float>>();
+
+    void TestXXX()
+    {
+        if (datas.ContainsKey(1))
+        {
+            //datas.Count;
+        }
+    }
 }
 
 /// <summary>
@@ -193,3 +229,170 @@ public class FormulaSheet : FormulaSheetTemplate
     }
 
 }
+
+#region 配置表流加载功能
+
+public interface IConfigSerializer
+{
+    void ToStream(BinaryWriter bw);
+    void FromStream(BinaryReader br);
+}
+
+public abstract class StreamConfig : IConfigSerializer
+{
+    public abstract void FromStream(BinaryReader br);
+    public abstract void ToStream(BinaryWriter bw);
+
+    public byte[] ToBytes()
+    {
+        using (var ms = new MemoryStream())
+        {
+            using (BinaryWriter bw = new BinaryWriter(ms,Encoding.UTF8))
+            {
+                ToStream(bw);
+
+                return ms.ToArray();
+
+//                bw.BaseStream.Position = 0;
+//                byte[] bytes = new byte[bw.BaseStream.Length];
+//                bw.BaseStream.Read(bytes, 0, bytes.Length);
+//                return bytes;
+            }
+        }
+    }
+
+    public void FromBytes(byte[] bytes)
+    {
+        using (var ms = new MemoryStream(bytes))
+        {
+            using (var br = new BinaryReader(ms,Encoding.UTF8))
+            {
+                FromStream(br);
+            }
+        }
+    }
+
+    protected void ReadArray(BinaryReader br,ref int[] arr)
+    {
+        int _count = br.ReadInt32();
+        arr = new int[_count];
+        for (int i = 0; i < _count; i++)
+        {
+            arr[i] = br.ReadInt32();
+        }
+    }
+    protected void ReadArray(BinaryReader br,ref string[] arr)
+    {
+        int _count = br.ReadInt32();
+        arr = new string[_count];
+        for (int i = 0; i < _count; i++)
+        {
+            arr[i] = br.ReadString();
+        }
+    }
+
+    protected void ReadArray(BinaryReader br,ref double[] arr)
+    {
+        int _count = br.ReadInt32();
+        arr = new double[_count];
+        for (int i = 0; i < _count; i++)
+        {
+            arr[i] = br.ReadDouble();
+        }
+    }
+    protected void ReadArray(BinaryReader br,ref long[] arr)
+    {
+        int _count = br.ReadInt32();
+        arr = new long[_count];
+        for (int i = 0; i < _count; i++)
+        {
+            arr[i] = br.ReadInt64();
+        }
+    }
+    protected void ReadArray(BinaryReader br,ref float[] arr)
+    {
+        int _count = br.ReadInt32();
+        arr = new float[_count];
+        for (int i = 0; i < _count; i++)
+        {
+            arr[i] = br.ReadSingle();
+        }
+    }
+
+    public void WriteArray(BinaryWriter bw,ref int[] arr)
+    {
+        if(arr == null)
+        {
+            bw.Write(0);
+            return;
+        }
+
+        // 先写长度
+        bw.Write(arr.Length);
+
+        // 一个个写入
+        for (int i = 0; i < arr.Length; i++)
+        {
+            bw.Write(arr[i]);
+        }
+    }
+
+    public void WriteArray(BinaryWriter bw,ref long[] arr)
+    {
+        if(arr == null)
+        {
+            bw.Write(0);
+            return;
+        }
+        bw.Write(arr.Length);
+        for (int i = 0; i < arr.Length; i++)
+        {
+            bw.Write(arr[i]);
+        }
+    }
+
+    public void WriteArray(BinaryWriter bw,ref float[] arr)
+    {
+        if(arr == null)
+        {
+            bw.Write(0);
+            return;
+        }
+        bw.Write(arr.Length);
+        for (int i = 0; i < arr.Length; i++)
+        {
+            bw.Write(arr[i]);
+        }
+    }
+
+    public void WriteArray(BinaryWriter bw,ref string[] arr)
+    {
+        if(arr == null)
+        {
+            bw.Write(0);
+            return;
+        }
+        bw.Write(arr.Length);
+        for (int i = 0; i < arr.Length; i++)
+        {
+            bw.Write(arr[i]);
+        }
+    }
+
+    public void WriteArray(BinaryWriter bw,ref double[] arr)
+    {
+        if(arr == null)
+        {
+            bw.Write(0);
+            return;
+        }
+        bw.Write(arr.Length);
+        for (int i = 0; i < arr.Length; i++)
+        {
+            bw.Write(arr[i]);
+        }
+    }
+
+}
+
+#endregion
