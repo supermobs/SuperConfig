@@ -609,7 +609,7 @@ namespace exporter
                         }
                         else if(t.Contains("string"))
                         {
-                            sb.Append("\tbw.Write(" + n + "!=null ? " + n + ":\"\"" + ");\r\n");
+                            sb.Append("\tbw.Write(!string.IsNullOrEmpty(" + n + ") ? " + n + ":\"\"" + ");\r\n");
                         }
                         else
                         {
