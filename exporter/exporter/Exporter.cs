@@ -105,13 +105,17 @@ namespace exporter
             public Dictionary<string, int[]> groupindexs = new Dictionary<string, int[]>();
 
             public List<int> ids = new List<int>();
-            public List<List<object>> dataContent = new List<List<object>>();
+            public List<List<object>> dataContent = new List<List<object>>(); // 导出列cols - 对应的一行行数值   : [行id(第一列) >[| | | | | | ]]
             public Dictionary<int, Dictionary<int, object>>[] dataLabelModifys;
 
+            // 替换这个表格数据 - 多语言
             public string ApplyModify()
             {
+                // ? 一般不是一个不同的导出标签替换嘛？
                 for (int i = 0; i < Cache.labels.Count; i++)
                 {
+                    Console.WriteLine("当前导出使用了多语言标签=" + Cache.labels[i]);
+
                     var dm = dataLabelModifys[i];
                     var e = dm.GetEnumerator();
                     while (e.MoveNext())
@@ -123,6 +127,43 @@ namespace exporter
                             dataContent[dindex][p.Key] = p.Value;
                     }
                 }
+
+                // 应用列的多语言标签替换规则
+                for (int i = 0; i < keys.Count; )
+                {
+                    var key = keys[i];
+                    if(key.Contains("*")) 
+                    {
+                        Console.WriteLine("这个表:" + name + "的是一列多语言列不需要导出:" + key);
+                        keys.RemoveAt(i);
+                        keyNames.RemoveAt(i);
+                        types.RemoveAt(i);
+                        cols.RemoveAt(i);
+
+                        // 判断这个标签是否需要用来当前替换
+                        var sps = key.Split('*');
+                        if(sps.Length != 2) {
+                            return name + "表的" + key + "貌似不符合多语言标签列命名规则!?";
+                        }
+                        string target_key_name = sps[0];
+                        string label = sps[1];
+                        if(Cache.labels.Contains(label) == false) continue; // ! 不需要导出
+
+                        int target_key_index = keys.IndexOf(target_key_name);
+                        if (target_key_index < 0) {
+                            return name + "表的" + key + "多语言标签替换找不到这个替换目标列名:" + target_key_name;
+                        }
+
+                        for (int id = 0; id < dataContent.Count; id++)
+                        {
+                            dataContent[id][target_key_index] = dataContent[id][i];
+                        }
+
+                    } else {
+                        i++;
+                    }
+                }
+
                 return string.Empty;
             }
         }
@@ -275,6 +316,7 @@ namespace exporter
             string[] larr = sheet.SheetName.Split('_');
             string tableName = sheet.SheetName.Substring(0, sheet.SheetName.LastIndexOf('_'));
             int labelindex = Cache.labels.IndexOf(larr[larr.Length - 1]);
+
             // 不要这个标签的内容
             if (labelindex < 0)
                 return string.Empty;
@@ -348,6 +390,8 @@ namespace exporter
                 return string.Empty;
 
             string[] larr = tableName.Split('_');
+
+            // ! 有分隔符并且是大写的时候才是多语言
             if (tableName.Contains("_") && larr[larr.Length - 1] == larr[larr.Length - 1].ToUpper())
             {
                 try
@@ -364,8 +408,11 @@ namespace exporter
             lock (datas)
             {
                 if (!datas.TryGetValue(tableName, out data))
+                {
                     data = new DataStruct(tableName);
+                }
             }
+
             lock (data)
             {
                 data.files.Add(book.fileName);
@@ -388,21 +435,31 @@ namespace exporter
                     List<int> cols = new List<int>();
                     for (int i = 0; i < engRow.LastCellNum; i++)
                     {
+                        // 如果列名没有 || 不是字符串 || 空字符串 都不需要导出
                         if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String || string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
                             continue;
+
+                        // 记录有效的导出列位置
                         cols.Add(i);
+
                         string key = engRow.GetCell(i).StringCellValue;
                         if (keys.Contains(key)) return "字段名重复 " + key + "，SheetName = " + tableName + "，FileName = " + book.fileName;
                         keys.Add(key);
+
+                        // 列的中文字段名称
                         keyNames.Add((cnRow == null || cnRow.GetCell(i) == null) ? "" : cnRow.GetCell(i).StringCellValue.Replace("\n", " "));
+
+                        // 列的数值类型
                         string type = (tRow == null || tRow.GetCell(i) == null) ? " " : tRow.GetCell(i).StringCellValue;
                         types.Add(type);
+
                         if (!dataTypes.Contains(type))
                             return "未知的数据类型" + type + "，SheetName = " + tableName + "，FileName = " + book.fileName;
                     }
 
                     if (data.isnew)
                     {
+                        // ! 如果第一列不是id - int的话
                         if (types[0] != "int")
                             return "表头错误，索引必须为int类型，SheetName = " + tableName + "，FileName = " + book.fileName;
 
@@ -413,6 +470,7 @@ namespace exporter
                     }
                     else
                     {
+                        // ! 如果是老的表的话重新校验一下
                         string error = "表头不一致，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
                         Compare(keys, data.keys, error);
                         Compare(keyNames, data.keyNames, error);
@@ -485,7 +543,7 @@ namespace exporter
                         object codevalue = GetCodeValue(sheet, book, cell, data.types[j], out err);
                         if (!string.IsNullOrEmpty(err))
                             return err;
-                        values.Add(codevalue);
+                        values.Add(codevalue); // 对应的这一行的每一列的数值都添加进来 - 对应的是有效的导出列的位置的数值
                     }
 
                     int id = (int)values[0];
