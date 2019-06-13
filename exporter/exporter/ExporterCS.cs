@@ -359,30 +359,21 @@ namespace exporter
                     // 保存一次stream二进制流接口
                     sb.Append(string.Format("\tpublic static void Save{0} () {{\r\n", tableClassName));
                     sb.Append("\tstring filename=\"" + jsonfilename+ "\";\r\n");
-                    sb.Append("\tstring js_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".json\";\r\n");
-                    sb.Append("\tstring js=ExportUtils.LoadConfig(js_path);\r\n");
-                    sb.Append(string.Format("\tvar val= Newtonsoft.Json.JsonConvert.DeserializeObject<{0}>(js);\r\n",tableClassName));
-                    sb.Append("\tvar bys=val.ToBytes();\r\n");
-                    sb.Append("\tstring save_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
-                    sb.Append("\tFile.WriteAllBytes(save_path,bys);\r\n");
+                    sb.Append("\tList<string> dirs = new List<string>(Directory.GetDirectories(PATH_ASSETS_FOLDER));\r\n");
+                    sb.Append("\tdirs.Add(PATH_ASSETS_FOLDER);\r\n");
 
-                    sb.Append("\tstring js_path_review=PATH_REVIEW_ASSETS_FOLDER+\"/\" + filename + \".json\";\r\n");
-                    sb.Append("\tif(File.Exists(js_path_review)){\r\n");
-                    sb.Append("\t\tjs = ExportUtils.LoadConfig(js_path_review);\r\n");
-                    sb.Append(string.Format("\t\tval = Newtonsoft.Json.JsonConvert.DeserializeObject<{0}>(js);\r\n",tableClassName));
-                    sb.Append("\t\tif(val != null) {\r\n");
-                    sb.Append("\t\t\tbys = val.ToBytes();\r\n");
-                    sb.Append("\t\t\tsave_path=PATH_REVIEW_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
-                    sb.Append("\t\t\tFile.WriteAllBytes(save_path,bys);\r\n");
-                    sb.Append("\t\t\t}\r\n");
-                    sb.Append("\t\t\telse{\r\n");
-                    sb.Append("\t\t\tDebug.LogError(\"保存二进制审核文件解析不出来:\"+filename);\r\n");
-                    sb.Append("\t\t}\r\n");
+                    sb.Append("\tforeach(var dir in dirs){\r\n");
+                    sb.Append("\t\tstring js_path=dir+\"/\" + filename + \".json\";\r\n");
+                    sb.Append("\t\tif(File.Exists(js_path) == false) continue; \r\n");
+                    sb.Append("\t\tstring js=ExportUtils.LoadConfig(js_path);\r\n");
+                    sb.Append(string.Format("\t\tvar val= Newtonsoft.Json.JsonConvert.DeserializeObject<{0}>(js);\r\n",tableClassName));
+                    sb.Append("\t\tvar bys=val.ToBytes();\r\n");
+                    sb.Append("\t\tstring save_path=dir+\"/\" + filename + \".bytes\";\r\n");
+                    sb.Append("\t\tFile.WriteAllBytes(save_path,bys);\r\n");
                     sb.Append("\t}\r\n");
                     sb.Append("\t}\r\n");
+
                     lock (savefuncs) savefuncs.Add("Config.Save" + tableClassName);
-
-
                     sb.Append("}\r\n"); // config扩展接口类结束
 
                     //------
