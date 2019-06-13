@@ -23,10 +23,7 @@ https://github.com/superzys/SuperConfigDemo.git
 
 7、sheet第四行，字段类型，int整数、string字符串、float(double)浮点数32位、float64浮点数64位，在类型前加[]表示字段是数组自动，用"|"分隔值 
 
-8、sheet第五行开始是表的数据，首字段不填写或值为0视为无效数据 
-
-9、sheet的首字段必须是int类型，并且是全表的唯一索引 
-
+8、sheet第五行开始是表的数据，首字段不填写或值为0视为无效数据 9、sheet的首字段必须是int类型，并且是全表的唯一索引 
 
 ## excel公式
 1、sheet名以(F)开头即标注本页是公式，sheet名的后面部分即为公式名
@@ -48,7 +45,7 @@ https://github.com/superzys/SuperConfigDemo.git
 				SUM			不支持矩阵
 				VLOOKUP		只能以数据表的第一列做索引
 
-## excel标签表（多语言）
+## excel标签表 (多语言)
 1、sheet名格式为主表sheet名+下划线+纯大写的标签名，如 "level_CHT"
 
 2、sheet二三四行跟主表一致，第一行留空
@@ -59,6 +56,8 @@ https://github.com/superzys/SuperConfigDemo.git
 
 5、单元格里填“*”代表以主表为准，不进行替换
 
+## excel标签列 (多语言)
+1、例如有一列名叫name,可以定义另外一列name*EN 增加多一列多语言可替换的列
 
 ## 其他特殊语言
 **请看reference里面的语言特殊文件以及说明**
