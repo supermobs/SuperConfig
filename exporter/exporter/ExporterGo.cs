@@ -231,6 +231,7 @@ namespace exporter
             Dictionary<string, string> loadTableFuncs = new Dictionary<string, string>();
 
             // 写公式
+            Console.WriteLine("写入go公式");
             foreach (var formula in formulaContents)
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
@@ -241,6 +242,7 @@ namespace exporter
             List<string> results = new List<string>();
 
             // 写go
+            Console.WriteLine("写入go文件");
             foreach (var data in datas.Values)
             {
                 ThreadPool.QueueUserWorkItem(ooo =>
@@ -353,9 +355,10 @@ namespace exporter
             }
 
             // 写json
+            Console.WriteLine("写入json文件");
             foreach (var data in datas.Values)
             {
-                ThreadPool.QueueUserWorkItem(ooo =>
+                ThreadPool.QueueUserWorkItem(写入JSON对象 =>
                 {
                     JObject config = new JObject();
                     config["Name"] = data.name;
@@ -365,17 +368,28 @@ namespace exporter
                     data.dataContent.Sort((a, b) => { return (int)a[0] - (int)b[0]; });
                     foreach (var line in data.dataContent)
                     {
-                        JObject ll = new JObject();
-                        for (int j = 0; j < data.keys.Count; j++)
-                            ll[data.keys[j]] = JToken.FromObject(line[j]);
-                        datas[line[0].ToString()] = ll;
+                        try
+                        {
+                            JObject ll = new JObject();
+                            for (int j = 0; j < data.keys.Count; j++)
+                                ll[data.keys[j]] = JToken.FromObject(line[j]);
+                            datas[line[0].ToString()] = ll;
+                        } 
+                        catch(Exception e) 
+                        {
+                            // Console.WriteLine("序列化dataContent数据内容出错:" + e.Message);
+                            throw new Exception("序列化dataContent数据内容出错:" + e.Message);
+                        }
                     }
 
                     JObject group = new JObject();
                     config["Group"] = group;
                     Dictionary<string, string[]>.Enumerator enumerator = data.groups.GetEnumerator();
                     while (enumerator.MoveNext())
+                    {
                         group[enumerator.Current.Key.Replace("|", "_")] = new JObject();
+                    }
+
                     foreach (var values in data.dataContent)
                     {
                         enumerator = data.groups.GetEnumerator();
@@ -386,13 +400,12 @@ namespace exporter
                             for (int j = 0; j < enumerator.Current.Value.Length - 1; j++)
                             {
                                 key = values[data.groupindexs[enumerator.Current.Key][j]].ToString();
-                                if (cur[key] == null)
-                                    cur[key] = new JObject();
+                                if (cur[key] == null) cur[key] = new JObject();
                                 cur = cur[key] as JObject;
                             }
                             key = values[data.groupindexs[enumerator.Current.Key][enumerator.Current.Value.Length - 1]].ToString();
-                            if (cur[key] == null)
-                                cur[key] = new JArray();
+
+                            if (cur[key] == null) cur[key] = new JArray();
                             (cur[key] as JArray).Add(JToken.FromObject(values[0]));
                         }
                     }
@@ -452,6 +465,7 @@ namespace exporter
             }
 
             // 格式化go代码
+            Console.WriteLine("格式化go");
             ProcessStartInfo info = new ProcessStartInfo();
             info.FileName = "gofmt";
             info.WindowStyle = ProcessWindowStyle.Hidden;

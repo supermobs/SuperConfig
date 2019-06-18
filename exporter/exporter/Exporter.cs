@@ -161,12 +161,13 @@ namespace exporter
                     } 
                 }
 
+                bool _is_need_remove_label = false;
                 for (int i = 0; i < keys.Count;)
                 {
                     var key = keys[i];
                     if(key.Contains("*")) 
                     {
-                        Console.WriteLine("[多语言] 执行移除 这个表:" + name + "的是一列多语言列不需要导出:" + key);
+                        // Console.WriteLine("[多语言] 执行移除 这个表:" + name + "的是一列多语言列不需要导出:" + key);
                         keys.RemoveAt(i);
                         keyNames.RemoveAt(i);
                         types.RemoveAt(i);
@@ -176,9 +177,45 @@ namespace exporter
                         {
                             dataContent[id].RemoveAt(i);
                         }
+
+                        // ! group记录的序号也要改一下
+                        _is_need_remove_label = true;
+
                     } else {
                         i++;
                     } 
+                }
+
+                /*
+                List<int> indexs = new List<int>();
+                            string[] arr = g.Split('|');
+                            foreach (string dt in arr)
+                            {
+                                int index = data.keys.IndexOf(dt);
+                                if (index == -1)
+                                    return "找不到数据分组要的字段[" + dt + "]，SheetName = " + tableName + "，FileName = " + book.fileName;
+                                indexs.Add(index);
+                            }
+                            data.groups.Add(g, arr);
+                            data.groupindexs.Add(g, indexs.ToArray());
+                 */
+
+                if(_is_need_remove_label)
+                {
+                    Console.WriteLine("[多语言] 需要刷新一下记录的Group分组序号");
+                    foreach (var g in groups)
+                    {
+                        List<int> indexs = new List<int>();
+                        string[] arr = g.Key.Split('|');
+                        foreach (string dt in arr)
+                        {
+                            int index = keys.IndexOf(dt);
+                            if (index == -1)
+                                return "找不到数据分组要的字段[" + dt + "]，SheetName = " + name;
+                            indexs.Add(index);
+                        }
+                        groupindexs[g.Key] = indexs.ToArray();
+                    }
                 }
 
                 return string.Empty;
@@ -645,6 +682,7 @@ namespace exporter
                     return error;
 
             // 应用标签修改
+            Console.WriteLine("[多语言] 应用标签开始>>>>>>>>>>>>>>>>>>>>");
             var enumerator = datas.GetEnumerator();
             while (enumerator.MoveNext())
             {
@@ -652,6 +690,7 @@ namespace exporter
                 if (!string.IsNullOrEmpty(err))
                     return err;
             }
+            Console.WriteLine("[多语言] 应用标签结束!");
 
             return string.Empty;
         }
