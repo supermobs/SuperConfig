@@ -114,7 +114,7 @@ namespace exporter
                 // ? 一般不是一个不同的导出标签替换嘛？
                 for (int i = 0; i < Cache.labels.Count; i++)
                 {
-                    Console.WriteLine("当前导出使用了多语言标签=" + Cache.labels[i]);
+                    Console.WriteLine("[多语言] 执行替换 < " + name + " > 导出时使用多语言标签=" + Cache.labels[i]);
 
                     var dm = dataLabelModifys[i];
                     var e = dm.GetEnumerator();
@@ -122,46 +122,63 @@ namespace exporter
                     {
                         var dindex = ids.IndexOf(e.Current.Key);
                         if (dindex < 0)
-                            return name + "表的" + Cache.labels[i] + "标签表，有一个主表不存在的id，id=" + e.Current.Key;
+                            return "[多语言] < " + name + " >" + Cache.labels[i] + "标签表，有一个主表不存在的id，id=" + e.Current.Key;
                         foreach (var p in e.Current.Value)
                             dataContent[dindex][p.Key] = p.Value;
                     }
                 }
 
                 // 应用列的多语言标签替换规则
-                for (int i = 0; i < keys.Count; )
+                for (int i = 0; i < keys.Count; i++)
                 {
                     var key = keys[i];
                     if(key.Contains("*")) 
                     {
-                        Console.WriteLine("这个表:" + name + "的是一列多语言列不需要导出:" + key);
-                        keys.RemoveAt(i);
-                        keyNames.RemoveAt(i);
-                        types.RemoveAt(i);
-                        cols.RemoveAt(i);
-
                         // 判断这个标签是否需要用来当前替换
                         var sps = key.Split('*');
                         if(sps.Length != 2) {
-                            return name + "表的" + key + "貌似不符合多语言标签列命名规则!?";
+                            return "[多语言] " + name + "表的" + key + "貌似不符合多语言标签列命名规则!?";
                         }
                         string target_key_name = sps[0];
                         string label = sps[1];
                         if(Cache.labels.Contains(label) == false) continue; // ! 不需要导出
 
-                        int target_key_index = keys.IndexOf(target_key_name);
-                        if (target_key_index < 0) {
-                            return name + "表的" + key + "多语言标签替换找不到这个替换目标列名:" + target_key_name;
+                        int key_index_i = keys.IndexOf(target_key_name);
+                        if (key_index_i < 0) {
+                            return "[多语言] " + name + "表的" + key + "多语言标签替换找不到这个替换目标列名:" + target_key_name;
                         }
 
                         for (int id = 0; id < dataContent.Count; id++)
                         {
-                            dataContent[id][target_key_index] = dataContent[id][i];
+                            // test debug
+                            // if(id == 0) 
+                            // {
+                            //     Console.WriteLine("[多语言] 第一条替换：" + dataContent[id][key_index_i] + " > " +dataContent[id][i]);
+                            // }
+                            dataContent[id][key_index_i] = dataContent[id][i];
                         }
 
+                    } 
+                }
+
+                for (int i = 0; i < keys.Count;)
+                {
+                    var key = keys[i];
+                    if(key.Contains("*")) 
+                    {
+                        Console.WriteLine("[多语言] 执行移除 这个表:" + name + "的是一列多语言列不需要导出:" + key);
+                        keys.RemoveAt(i);
+                        keyNames.RemoveAt(i);
+                        types.RemoveAt(i);
+                        cols.RemoveAt(i);
+                        // ! dataContent 也需要把那一列的数据移除掉
+                        for (int id = 0; id < dataContent.Count; id++)
+                        {
+                            dataContent[id].RemoveAt(i);
+                        }
                     } else {
                         i++;
-                    }
+                    } 
                 }
 
                 return string.Empty;
