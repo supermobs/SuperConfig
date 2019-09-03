@@ -346,7 +346,7 @@ namespace exporter
                     sb.Append("\t#endif\r\n");
 
                     sb.Append(string.Format("\t_{0} = new {0}();\r\n",tableClassName));
-                    sb.Append(string.Format("\t_{0}.FromBytes(bys);\r\n",tableClassName));
+                    sb.Append(string.Format("\t_{0}.Init(bys);\r\n",tableClassName));
 
                     sb.Append("\t}\r\n");
 
@@ -632,39 +632,89 @@ namespace exporter
                         // --------------------------------
                     }
 
+                    // 增加二进制流动态读取的结构和对象
+                    sb.Append("\tprivate Dictionary<int, int> _Data_Pos;\r\n");
+                    sb.Append("\tprivate BinaryReader _br;\r\n");
+                    sb.Append("\tprivate long _start_data_pos;\r\n");
+                    sb.Append("\tprivate byte[] _bytes;\r\n");
+                    sb.Append("\tprivate bool isInitAll;\r\n");
+                    sb.Append("\tpublic int Count;\r\n");
+
+                    sb.Append(string.Format("\tpublic Dictionary<int, {0}> GetFullDatas()",configClassName) + "{\r\n");
+                    sb.Append("\t\tif (isInitAll == false){ \r\n");
+                    sb.Append("\t\t\tisInitAll = true;\r\n");
+                    sb.Append("\t\t\tforeach (var item in _Data_Pos){ ReadConfig(item.Key); }\r\n");
+                    sb.Append("\t}\r\n");
+                    sb.Append("\t\treturn _Datas;\r\n");
+                    sb.Append("}\r\n");
+
+                    sb.Append("\tpublic void Init(byte[] bs){\r\n");
+                    sb.Append("\t\t_bytes = bs;\r\n");
+                    sb.Append("\t\t_br = new BinaryReader(new MemoryStream(bs));\r\n");
+                    sb.Append("\t\tthis.FromBytes(bs);\r\n");
+                    sb.Append("}\r\n");
+
+                    sb.Append("\t" + configClassName + " ReadConfig(int id) { \r\n");
+                    sb.Append("\t\t" + configClassName + " cfg = null;\r\n");
+                    sb.Append("\t\tif (_Datas.TryGetValue(id, out cfg)) return cfg;\r\n");
+                    sb.Append("\t\tif (_Data_Pos.ContainsKey(id) == false) return null;\r\n");
+                    sb.Append("\t\tcfg = new " + configClassName + "();\r\n");
+                    sb.Append("\t\tint p = _Data_Pos[id];\r\n");
+                    sb.Append("\t\t_br.BaseStream.Position = _start_data_pos + p;\r\n");
+                    sb.Append("\t\tcfg.FromStream(_br);\r\n");
+                    sb.Append("\t\t_Datas[id] = cfg; \r\n");
+                    sb.Append("\t\treturn cfg;\r\n");
+                    sb.Append("}\r\n");
+
                     // ! > stream 加载
                     sb.Append("\tpublic override void FromStream(BinaryReader br){\r\n");
                     sb.Append("\t\tName=br.ReadString();\r\n");
-                    sb.Append("\t\tint _datas_count=br.ReadInt32();\r\n");
-                    sb.Append(string.Format("\t\t_Datas=new Dictionary<int, {0}>(_datas_count);\r\n",configClassName));
-                    sb.Append("\t\tfor(int i=0; i < _datas_count; i++){\r\n");
-                    sb.Append("\t\tint k=br.ReadInt32();\r\n");
-                    sb.Append("\t\t" + configClassName+" cfg = new " + configClassName+"();\r\n");
-                    sb.Append("\t\tcfg.FromStream(br);\r\n");
-                    sb.Append("\t\t_Datas[k]=cfg;\r\n");
-                    sb.Append("\t}\r\n");
                     sb.Append("\t\t_Group=new " + groupClassName+"();\r\n");
                     sb.Append("\t\t_Group.FromStream(br);\r\n");
+                    sb.Append("\t\tint _datas_count=br.ReadInt32();\r\n");
+                    sb.Append("\t\tCount = _datas_count;\r\n");
+                    sb.Append(string.Format("\t\t_Datas=new Dictionary<int, {0}>();\r\n",configClassName));
+                    sb.Append("\t\t_Data_Pos = new Dictionary<int, int>(_datas_count);\r\n");
+                    sb.Append("\t\tfor(int i=0; i < _datas_count; i++){\r\n");
+                    sb.Append("\t\tint _id=br.ReadInt32();\r\n");
+                    sb.Append("\t\tint _pos=br.ReadInt32();\r\n");
+                    sb.Append("\t\t_Data_Pos[_id] = _pos;\r\n");
+                    sb.Append("\t\t}\r\n");
+                    sb.Append("\t\t_start_data_pos = br.BaseStream.Position;\r\n");
                     sb.Append("}\r\n");
 
                     // ! < stream 写入
                     sb.Append("\tpublic override void ToStream(BinaryWriter bw){\r\n");
                     sb.Append("\t\tbw.Write(Name);\r\n");
-                    sb.Append("\t\tbw.Write(_Datas.Count);\r\n");
-                    sb.Append("\t\tforeach(var item in _Datas){\r\n");
-                    sb.Append("\t\t\tbw.Write(item.Key);\r\n");
-                    sb.Append("\t\t\titem.Value.ToStream(bw);\r\n");
-                    sb.Append("\t}\r\n");
                     sb.Append("\t\t_Group.ToStream(bw);\r\n");
+                    sb.Append("\t\tbw.Write(_Datas.Count);\r\n");
+
+                    sb.Append("\t\tList<int> _ids = new List<int>();\r\n");
+                    sb.Append("\t\tList<int> _idlens = new List<int>();\r\n");
+                    sb.Append("\t\tList<byte[]> _idbys = new List<byte[]>();\r\n");
+                    sb.Append("\t\tint _idpos = 0;\r\n");
+                    sb.Append("\t\tforeach(var item in _Datas){\r\n");
+                    sb.Append("\t\t\t_ids.Add(item.Key);\r\n");
+                    sb.Append("\t\t\tvar bs = item.Value.ToBytes();\r\n");
+                    sb.Append("\t\t\t_idbys.Add(bs);\r\n");
+                    sb.Append("\t\t\t_idlens.Add(_idpos);\r\n");
+                    sb.Append("\t\t\t_idpos += bs.Length;\r\n");
+                    sb.Append("\t}\r\n");
+
+                    sb.Append("\t\tfor (int i = 0; i < _ids.Count; i++){\r\n");
+                    sb.Append("\t\t\tbw.Write(_ids[i]);\r\n");
+                    sb.Append("\t\t\tbw.Write(_idlens[i]);\r\n");
+                    sb.Append("\t}\r\n");
+
+                    sb.Append("\t\tfor (int i = 0; i < _ids.Count; i++){\r\n");
+                    sb.Append("\t\t\tbw.Write(_idbys[i]);\r\n");
+                    sb.Append("\t}\r\n");
+
                     sb.Append("}\r\n");
 
                     // get config function
                     sb.Append("public " + configClassName + " Get(int id) {\r\n");
-                    // ! sb.Append("\tstring k = id.ToString();\r\n");
-                    sb.Append("\t" + configClassName + " ret;\r\n");
-                    sb.Append("\tif (_Datas.TryGetValue(id,out ret))\r\n");
-                    sb.Append("\t\treturn ret;\r\n");
-                    sb.Append("\treturn null;\r\n");
+                    sb.Append("\t\treturn ReadConfig(id);\r\n");
                     sb.Append("}\r\n");
 
 
@@ -742,7 +792,7 @@ namespace exporter
                             continue;
                         sb.Append("\tpublic float data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(int id) {\r\n");
                         // ! id.ToString()
-                        sb.Append("\treturn (float)(Config.Get" + tableClassName + "()._Datas[id]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");\r\n");
+                        sb.Append("\treturn (float)(Get(id)." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ");\r\n");
                         sb.Append("}\r\n");
                     }
 
