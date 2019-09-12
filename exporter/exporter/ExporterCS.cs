@@ -311,9 +311,9 @@ namespace exporter
                     sb.Append("using System.IO;\r\n");
 
                     // 使用c#热更的引用
-                    sb.Append("#if !UNITY_EDITOR\r\n");
+                    // sb.Append("#if !UNITY_EDITOR\r\n");
                     sb.Append("using SuperMobs.CoreExport;\r\n");
-                    sb.Append("#endif\r\n");
+                    // sb.Append("#endif\r\n");
                     sb.Append("\r\n");
 
                     // 扩展Config类统一获取某个表的实例对象
@@ -338,12 +338,12 @@ namespace exporter
                     // ! 二进制加载方法
                     sb.Append("\tstring filename=\"" + jsonfilename+ "\";\r\n");
 
-                    sb.Append("\t#if UNITY_EDITOR\r\n");
-                    sb.Append("\tstring js_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
-                    sb.Append("\tbyte[] bys = ExportUtils.LoadConfigBytes(js_path);\r\n");
-                    sb.Append("\t#else\r\n");
+                    // sb.Append("\t#if UNITY_EDITOR\r\n");
+                    // sb.Append("\tstring js_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
+                    // sb.Append("\tbyte[] bys = ExportUtils.LoadConfigBytes(js_path);\r\n");
+                    // sb.Append("\t#else\r\n");
                     sb.Append("\tbyte[] bys = Service.Get<ILoaderService>().LoadConfigBytes(filename);\r\n");
-                    sb.Append("\t#endif\r\n");
+                    // sb.Append("\t#endif\r\n");
 
                     sb.Append(string.Format("\t_{0} = new {0}();\r\n",tableClassName));
                     sb.Append(string.Format("\t_{0}.Init(bys);\r\n",tableClassName));
