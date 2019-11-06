@@ -312,7 +312,7 @@ namespace exporter
 
                     // 使用c#热更的引用
                     // sb.Append("#if !UNITY_EDITOR\r\n");
-                    sb.Append("using SuperMobs.CoreExport;\r\n");
+                    // sb.Append("using SuperMobs.CoreExport;\r\n");
                     // sb.Append("#endif\r\n");
                     sb.Append("\r\n");
 
@@ -342,7 +342,7 @@ namespace exporter
                     // sb.Append("\tstring js_path=PATH_ASSETS_FOLDER+\"/\" + filename + \".bytes\";\r\n");
                     // sb.Append("\tbyte[] bys = ExportUtils.LoadConfigBytes(js_path);\r\n");
                     // sb.Append("\t#else\r\n");
-                    sb.Append("\tbyte[] bys = Service.Get<ILoaderService>().LoadConfigBytes(filename);\r\n");
+                    sb.Append("\tbyte[] bys = delegateLoadConfigBytes(filename);\r\n");
                     // sb.Append("\t#endif\r\n");
 
                     sb.Append(string.Format("\t_{0} = new {0}();\r\n",tableClassName));
@@ -365,7 +365,7 @@ namespace exporter
                     sb.Append("\tforeach(var dir in dirs){\r\n");
                     sb.Append("\t\tstring js_path=dir+\"/\" + filename + \".json\";\r\n");
                     sb.Append("\t\tif(File.Exists(js_path) == false) continue; \r\n");
-                    sb.Append("\t\tstring js=ExportUtils.LoadConfig(js_path);\r\n");
+                    sb.Append("\t\tstring js=delegateLoadConfigJson(js_path);\r\n");
                     sb.Append(string.Format("\t\tvar val= Newtonsoft.Json.JsonConvert.DeserializeObject<{0}>(js);\r\n",tableClassName));
                     sb.Append("\t\tvar bys=val.ToBytes();\r\n");
                     sb.Append("\t\tstring save_path=dir+\"/\" + filename + \".bytes\";\r\n");
@@ -797,6 +797,14 @@ namespace exporter
                     }
 
                     sb.Append("}\r\n"); // table class结束
+
+                    // ---------------------写这个table class的扩展便捷获取方法数组的SingleOne----------------------
+                    sb.Append("public static class " + tableClassName + "ExternFunc" + " {\r\n");
+                    sb.Append("\tpublic static " + configClassName + " SingleOne (this " + configClassName + "[] arr){ \r\n");
+                    sb.Append("\t\tif(arr != null && arr.Length > 0) return arr[0];\r\n");
+                    sb.Append("\t\treturn null;\r\n");
+                    sb.Append("\t}\r\n");
+                    sb.Append("}\r\n"); // table extern func class结束
 
                     File.WriteAllText(codeExportDir + "data_" + data.name + ".cs", sb.ToString());
                     Interlocked.Increment(ref goWriteCount);

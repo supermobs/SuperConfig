@@ -22,38 +22,13 @@ public partial class Config
     // 审核版本配置表对应存放目录
     const string PATH_REVIEW_ASSETS_FOLDER = "Assets/config_data/review";
 
-    /// <summary>
-    /// 获取客户端提示表的tip
-    /// </summary>
-    public static string GetClientTip(string label)
-    {
-        var ls = Config.GetClientTipTable().Get_name(label);
-        if(ls != null && ls.Length > 0)
-        {
-            return ls[0].Tip;
-        }
-        else
-        {
-            return "";
-        }
-    }
+    // 委托的加载接口方便不同项目设置
+    public delegate byte[] DelegateLoadConfigBytes(string filename);
 
-    /// <summary>
-    /// 通过副本玩法标签获取它的玩法名称
-    /// ! 可能有多语言考虑，在表里配置
-    /// </summary>
-    public static string GetFubenTitleName(string fb)
-    {
-        var ls = Config.GetFuncNameTable().Get_name(fb);
-        if(ls != null && ls.Length > 0)
-        {
-            return ls[0].Tip;
-        }
-        else
-        {
-            return "";
-        }
-    }
+    public delegate string DelegateLoadConfigJson(string filepath);
+
+    public static DelegateLoadConfigBytes delegateLoadConfigBytes;
+    public static DelegateLoadConfigJson delegateLoadConfigJson;
 }
 
 public struct SheetCell
