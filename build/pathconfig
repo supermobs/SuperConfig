@@ -1,9 +1,8 @@
-D:\layWork\SuperConfig\
-D:\layWork\SuperConfig\testExport\
-D:\layWork\SuperConfig\testExport\
-D:\layWork\SuperConfig\testExport\
-D:\layWork\SuperConfig\testExport\
-D:\layWork\SuperConfig\testExport\
-D:\layWork\SuperConfig\testExport\
-D:\layWork\SuperConfig\testExport1\
-
+../excel/
+../output/lua/
+../output/go/config/
+../output/go/config_data/
+../output/cs/config/
+../output/cs/config_data/
+../output/ts/config/
+../output/ts/config_data/

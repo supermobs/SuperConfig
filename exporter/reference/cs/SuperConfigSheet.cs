@@ -99,7 +99,33 @@ public class FormulaSheet : FormulaSheetTemplate
         }
     }
 
-    public float excelIf(float a, float b, float c)
+    public float excelAnd(params float[] args)
+    {
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] <= 0f)
+            {
+                return 0f;
+            }
+        }
+
+        return 1f;
+    }
+
+    public float excelOr(params float[] args)
+    {
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] > 0f)
+            {
+                return 1f;
+            }
+        }
+
+        return 0f;
+    }
+
+    public float excelIf(float c, float a, float b)
     {
         if (c > 0)
             return a;

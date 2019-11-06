@@ -140,5 +140,27 @@ namespace SuperConfig {
       });
       return ret;
     }
+
+    public excelAnd(...args : number[])
+    {
+      for (let index = 0; index < args.length; index++) {
+        const element = args[index];
+        if (element <= 0) {
+          return 0
+        }
+      }
+      return 1
+    }
+
+    public excelOr(...args : number[])
+    {
+      for (let index = 0; index < args.length; index++) {
+        const element = args[index];
+        if (element > 0) {
+          return 1
+        }
+      }
+      return 0
+    }
   }
 }
