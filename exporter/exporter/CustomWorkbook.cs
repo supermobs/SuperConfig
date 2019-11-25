@@ -107,8 +107,9 @@ namespace exporter
             readfiles = new List<string>();
             foreach (var file in new DirectoryInfo(excelpath).GetFiles())
             {
-                if (file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls" && file.Extension != ".xlsm"))
+                if (file.Name.StartsWith(".~$") || file.Name.StartsWith("~$") || (file.Extension != ".xlsx" && file.Extension != ".xls" && file.Extension != ".xlsm"))
                     continue;
+
                 foreach (var fname in Cache.GetNoCacheAbout(file))
                 {
                     if (!readfiles.Contains(fname))
