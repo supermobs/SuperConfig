@@ -459,7 +459,7 @@ namespace exporter
                         sb.Append(")"+ ":" + configClassName + "[]"+ " |undefined{\r\n");
 
                         // 优化先在cach的字典里面判断
-                        string cach_key = "";
+                        string cach_key = "\"_\"";
                         foreach (var t in g.Value)
                         {
                             string vk = t.Substring(0, 1).ToUpper() + t.Substring(1);
