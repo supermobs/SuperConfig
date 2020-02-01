@@ -62,8 +62,7 @@ namespace exporter
             string className = SheetName + "FormulaSheet";
 
             // module定义,让所有表都在一个模块里面
-            sb.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
-            sb.Append("namespace SuperConfig {\r\n");
+            sb.Append("import {FormulaSheet} from './ConfigBase'\r\n");
 
             sb.Append("\texport function " + " New" + className + "():"+className + "{\r\n");
             sb.Append("\t\tvar formula = new " + className + "();\r\n");
@@ -219,9 +218,6 @@ namespace exporter
 
             sb.Append("\t}\r\n");
 
-            // module结束符
-            sb.Append("}\r\n");
-
             // 结果
             formulaContents.Add(SheetName, sb.ToString());
 
@@ -291,6 +287,8 @@ namespace exporter
             List<string> tabNames = new List<string>();
             List<string> loadfuncs = new List<string>();
             List<string> clearfuncs = new List<string>();
+            List<string> importFiles = new List<string>();
+            List<string> formulaExportLines = new List<string>();
 
             // 写公式
             foreach (var formula in formulaContents)
@@ -298,6 +296,10 @@ namespace exporter
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".ts", formula.Value, new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
                 // lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
+                lock(formulaExportLines)
+                {
+                    formulaExportLines.Add("export * from './formula_" + formula.Key.ToLower() + "'\r\n");
+                }
             }
 
             List<string> results = new List<string>();
@@ -315,8 +317,8 @@ namespace exporter
                     StringBuilder sb = new StringBuilder();
 
                     // 扩展Config类统一获取某个表的实例对象
-                    sb.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
-                    sb.Append("namespace SuperConfig {\r\n");
+                    sb.Append("import {LoadJsonFunc} from './ConfigBase'\r\n");
+
 
                     // 获取方法
                     sb.Append("\tvar "+ " _" + tableClassName +":"+tableClassName+ "|undefined;\r\n");
@@ -337,7 +339,7 @@ namespace exporter
                     sb.Append(string.Format("\texport function Clear{0} () {{\r\n", tableClassName));
                     sb.Append(string.Format("\t\t_{0} = undefined;\r\n", tableClassName));
                     sb.Append("\t}\r\n");
-                    lock (clearfuncs) clearfuncs.Add("Clear" + tableClassName);
+                    
 
 
                     //加载结束------
@@ -531,16 +533,21 @@ namespace exporter
 
                     sb.Append("\t}\r\n"); // table class结束
 
-                    // module结束符
-                    sb.Append("}\r\n");
-
                     File.WriteAllText(codeExportDir + "data_" + data.name + ".ts", sb.ToString());
                     Interlocked.Increment(ref goWriteCount);
+
                     lock (loadfuncs) loadfuncs.Add("Load" + tableClassName);
-                    lock (tabNames) tabNames.Add(data.name+".json");//和上文LoadJsonFunc("**.json");  格式对应
+                    lock (clearfuncs) clearfuncs.Add("Clear" + tableClassName);
+                    lock (tabNames) tabNames.Add(data.name + ".json");//和上文LoadJsonFunc("**.json");  格式对应
+                    lock(importFiles)
+                    {
+                        importFiles.Add("import {" + "Load" + tableClassName + "," + "Clear" + tableClassName + "} from " + "'./data_" + data.name + "'\r\n");
+                    }
 
                     lock (results)
+                    {
                         results.Add(string.Empty);
+                    }
                 });
             }
 
@@ -611,13 +618,31 @@ namespace exporter
                 Thread.Sleep(10);
 
             // 写加载
-            loadfuncs.Sort();
-            tabNames.Sort();
             StringBuilder loadcode = new StringBuilder();
 
+            // 对方法进行排序一下
+            loadfuncs.Sort();
+            tabNames.Sort();
+            clearfuncs.Sort();
+
             // 扩展Config类统一获取某个表的实例对象
-            loadcode.Append("/// <reference path=\"ConfigBase.ts\" />\r\n");
-            loadcode.Append("namespace SuperConfig {\r\n");
+            // 这个load作为index导出所有ts的配置表结构作为模块
+            for (int i = 0; i < importFiles.Count; i++)
+            {
+                loadcode.Append(importFiles[i]);
+            }
+            loadcode.Append("\r\n");
+            loadcode.Append("export * from './ConfigBase' \r\n");
+            for (int i = 0; i < tabNames.Count; i++)
+            {
+                loadcode.Append("export * from './data_" + tabNames[i].Replace(".json", "") + "'\r\n");
+            }
+            for (int i = 0; i < formulaExportLines.Count; i++)
+            {
+                loadcode.Append(formulaExportLines[i]);
+            }
+
+
             //获取所有的配置表
             loadcode.Append("\texport function GetAllConfig(preUrl:string) {\r\n");
             loadcode.Append("\t\treturn [\r\n");
@@ -641,13 +666,12 @@ namespace exporter
             loadcode.Append("\t}\r\n");
 
             // clear all
-            clearfuncs.Sort();
             loadcode.Append("\texport function Clear() {\r\n");
             foreach (var str in clearfuncs)
                 loadcode.Append("\t\t" + str + "();\r\n");
             loadcode.Append("\t}\r\n");
 
-            loadcode.Append("}\r\n");
+
             File.WriteAllText(codeExportDir + "load.ts", loadcode.ToString());
 
             // 等待所有文件完成
