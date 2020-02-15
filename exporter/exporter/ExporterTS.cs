@@ -442,7 +442,7 @@ namespace exporter
 
                     // get config function
                     sb.Append("\n\r\t\tpublic " + "Get(id:number) :" + configClassName + "|undefined {\r\n");
-                    sb.Append("\t\t\tlet k:string = id.toString();\r\n");
+                    sb.Append("\t\t\tlet k:string = id?.toString();\r\n");
                     sb.Append("\t\t\tif (this._Datas.has(k))\r\n");
                     sb.Append("\t\t\t\treturn this._Datas.get(k);\r\n");
                     sb.Append("\t\t\treturn undefined;\r\n");
