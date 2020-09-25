@@ -119,7 +119,7 @@ namespace exporter
             int count = 1;
             foreach (var fname in readfiles)
             {
-                var file = new FileInfo(excelpath + "/" + fname);
+                var file = new FileInfo(Path.Combine(excelpath, fname));
                 CustomWorkbook book = new CustomWorkbook(file);
                 Console.WriteLine(count + " - 读取了表：" + fname);
                 book.type = CustomWorkbookType.Export;

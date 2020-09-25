@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NPOI.SS.UserModel;
 using System;
@@ -70,6 +70,13 @@ namespace exporter
                     sb.Append("}\r\n");
                 }
             }
+        }
+
+        static int CmpLen(List<object> l, List<object> r)
+        {
+            var sr = (string)r[1];
+            var sl = (string)l[1];
+            return sr.Length.CompareTo(sl.Length);
         }
 
         public static string DealWithFormulaSheetCS(ISheet sheet)
@@ -640,6 +647,15 @@ namespace exporter
                     sb.Append("\tprivate bool isInitAll;\r\n");
                     sb.Append("\tpublic int Count;\r\n");
 
+                    if (data.funcDatas.Count > 0)
+                    {
+                        foreach (var item in data.funcDatas)
+                        {
+                            var value = item.Value;
+                            sb.Append(string.Format("\tprivate Dictionary<int, Action<{0}>> _data_{1};\r\n", value.funcType, value.funcName));
+                        }
+                    }
+
                     sb.Append(string.Format("\tpublic Dictionary<int, {0}> GetFullDatas()",configClassName) + "{\r\n");
                     sb.Append("\t\tif (isInitAll == false){ \r\n");
                     sb.Append("\t\t\tisInitAll = true;\r\n");
@@ -717,6 +733,50 @@ namespace exporter
                     sb.Append("\t\treturn ReadConfig(id);\r\n");
                     sb.Append("}\r\n");
 
+                    if (data.funcDatas.Count > 0)
+                    {
+                        Console.WriteLine(data.name);
+                        foreach (var item in data.funcDatas)
+                        {
+                            var value = item.Value;
+                            string envName = string.Format("env_{0}_{1}_cs", data.name, value.funcName);
+                            DataStruct env = null;
+                            foreach (var e in datas)
+                            {
+                                if (e.Value.name == envName)
+                                {
+                                    env = e.Value;
+                                    env.dataContent.Sort(CmpLen);
+                                    break;
+                                }
+                            }
+                            sb.Append(string.Format("\tpublic Action<{0}> Get_{1}(int id) {{\r\n", value.funcType, value.funcName));
+                            sb.Append(string.Format("\t\tif (_data_{0} == null) {{\r\n", value.funcName));
+                            sb.Append(string.Format("\t\t\t_data_{0} = new Dictionary<int, Action<{1}>>();\r\n", value.funcName, value.funcType));
+                            var list = item.Value.data;
+                            for (int i = 0; i < list.Count; ++i)
+                            {
+                                var id = data.dataContent[i][0];
+                                // sb.Append(string.Format("\t\t\t/* {0} */", list[i])); // 翻译文字
+                                Console.WriteLine(i + " " + id);
+                                sb.Append(string.Format("\t\t\t_data_{0}[{1}] = delegate({2}) {{\r\n", value.funcName, id, value.funcTypeParam));
+                                Console.WriteLine(list[i]);
+                                var trans_list = list[i].Replace("\n", "").Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries); // aaa=bbb;ccc=ddd+eee;
+                                foreach (var line in trans_list)
+                                {
+                                    Console.WriteLine(line);
+                                    var eqarr = line.Split('=');
+                                    sb.Append(string.Format("\t\t\t\t// {0}\r\n", line));
+                                    sb.Append(string.Format("\t\t\t\t{0}={1};\r\n", env.TranslateLeft(eqarr[0]), env.TranslateRight(eqarr[1])));
+                                }
+                                sb.Append("\t\t\t};\r\n"); // enddelegate
+                            }
+                            sb.Append("\t\t}\r\n"); // endif
+                            sb.Append(string.Format("\t\treturn _data_{0}[id];\r\n", value.funcName));
+                            sb.Append("\t}\r\n");
+                            sb.Append("\r\n");
+                        }
+                    }
 
                     // group data function
                     foreach (var g in data.groups)

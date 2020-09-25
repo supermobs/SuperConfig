@@ -88,6 +88,18 @@ namespace exporter
             public int labelindex = 0;
             public List<string> files = new List<string>();
 
+            // 生成结算代码部分
+            public class FuncData
+            {
+                // calc(PlayerUnit attacker, PlayerUnity target, ResultComponent rc)
+                public string funcName; // calc
+                public string funcType; // PlayerUnit, PlayerUnity, ResultComponent 
+                public string funcTypeParam; // PlayerUnit attacker, PlayerUnity target, ResultComponent rc
+                public List<string> data;
+            }
+            public Dictionary<string, FuncData> funcDatas = new Dictionary<string, FuncData>();
+            
+
             public DataStruct(string name)
             {
                 this.name = name;
@@ -107,6 +119,62 @@ namespace exporter
             public List<int> ids = new List<int>();
             public List<List<object>> dataContent = new List<List<object>>(); // 导出列cols - 对应的一行行数值   : [行id(第一列) >[| | | | | | ]]
             public Dictionary<int, Dictionary<int, object>>[] dataLabelModifys;
+
+            public string TranslateLeft(string left)
+            {
+                foreach (var line in dataContent)
+                {
+                    var key = (string)line[1];
+                    var value = (string)line[2];
+                    left = left.Replace(key, value);
+                }
+                return left;
+            }
+
+            public string TranslateRight(string right)
+            {
+                foreach (var line in dataContent)
+                {
+                    var key = (string)line[1];
+                    var value = (string)line[3];
+                    right = right.Replace(key, value);
+                }
+                return right;
+            }
+
+            public void ApplyFuncPrase()
+            {
+                for (int i = keys.Count - 1; i >= 0; --i)
+                {
+                    var key = keys[i];
+                    if (key.StartsWith("(F)"))
+                    {
+                        var data = new FuncData();
+                        var arr = key.Substring(3).Split('(');
+                        data.funcName = arr[0];
+                        data.funcTypeParam = arr[1].Substring(0, arr[1].Length - 1);
+                        // 删除形式参数
+                        var par = new List<string>(data.funcTypeParam.Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries));
+                        for (int j = par.Count - 1; j > 0; j -= 2)
+                        {
+                            par.RemoveAt(j);
+                        }
+                        data.funcType = string.Join(", ", par);
+                        List<string> content = new List<string>();
+                        data.data = content;
+                        foreach(var c in dataContent)
+                        {
+                            content.Add((string)c[i]);
+                            c.RemoveAt(i);
+                        }
+                        funcDatas.Add(key, data);
+                        cols.RemoveAt(i);
+                        keys.RemoveAt(i);
+                        keyNames.RemoveAt(i);
+                        types.RemoveAt(i);
+                    }
+                }
+            }
 
             // 替换这个表格数据 - 多语言
             public string ApplyModify()
@@ -689,6 +757,7 @@ namespace exporter
                 string err = enumerator.Current.Value.ApplyModify();
                 if (!string.IsNullOrEmpty(err))
                     return err;
+                enumerator.Current.Value.ApplyFuncPrase();
             }
             Console.WriteLine("[多语言] 应用标签结束!");
 
