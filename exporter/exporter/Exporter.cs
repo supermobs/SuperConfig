@@ -162,8 +162,9 @@ namespace exporter
                         data.funcType = string.Join(", ", par);
                         List<string> content = new List<string>();
                         data.data = content;
-                        foreach(var c in dataContent)
+                        for (int k = 0; k < dataContent.Count; k++)
                         {
+                            var c = dataContent[k];
                             content.Add((string)c[i]);
                             c.RemoveAt(i);
                         }
