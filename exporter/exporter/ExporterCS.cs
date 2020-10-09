@@ -304,6 +304,11 @@ namespace exporter
                     string jsonfilename = bigname.ToLower();
 
                     StringBuilder sb = new StringBuilder();
+                    // 通过禁用一些warnning的提示
+                    sb.Append("#pragma warning disable 0219 // variable assigned but not used.\r\n");
+                    sb.Append("#pragma warning disable 0168 // variable declared but not used.\r\n");
+                    sb.Append("#pragma warning disable 0414 // private field assigned but not used.\r\n");
+
                     sb.Append("using System;\r\n");
                     sb.Append("using UnityEngine;\r\n");
                     sb.Append("using System.Collections;\r\n");
