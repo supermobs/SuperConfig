@@ -867,7 +867,9 @@ namespace exporter
                     sb.Append("public static class " + tableClassName + "ExternFunc" + " {\r\n");
                     sb.Append("\tpublic static " + configClassName + " SingleOne (this " + configClassName + "[] arr){ \r\n");
                     sb.Append("\t\tif(arr != null && arr.Length > 0) return arr[0];\r\n");
-                    sb.Append("\t\treturn null;\r\n");
+                    // sb.Append("\t\treturn null;\r\n");
+                    sb.Append("\t\treturn new " + configClassName + "();\r\n"); // 没有的话默认返回一个空的?
+
                     sb.Append("\t}\r\n");
                     sb.Append("}\r\n"); // table extern func class结束
 
