@@ -40,7 +40,9 @@ namespace exporter
         /// </summary>
         static void AppendCSDeclara(ISheet sheet, int col, bool canWrite, StringBuilder sb)
         {
-            List<string> declaras = new List<string>();
+            Dictionary<string, List<int>> sameKeyDeclaras = new Dictionary<string, List<int>>();
+            Regex regex = new Regex(@"(\d+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
             for (int i = 0; i <= sheet.LastRowNum; i++)
             {
                 IRow row = sheet.GetRow(i);
@@ -58,8 +60,6 @@ namespace exporter
                 if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
-                string sheetName = sheet.SheetName.Substring(3);
-                string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
                 sb.Append("public float Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() { //" + note +
                           "\r\n");
                 sb.Append("\treturn get(" + ((i + 1) * 1000 + col * 1 + 3) + ");\r\n");
@@ -72,12 +72,48 @@ namespace exporter
                     sb.Append("\tset(" + ((i + 1) * 1000 + col + 3) + ",v);\r\n");
                     sb.Append("}\r\n");
                 }
+
+                var m = regex.Match(name);
+                if (m.Success && name.Length > m.Value.Length)
+                {
+                    var key = name.Substring(0, name.Length - m.Value.Length);
+                    if (!sameKeyDeclaras.ContainsKey(key))
+                        sameKeyDeclaras.Add(key, new List<int>());
+                    sameKeyDeclaras[key].Add(int.Parse(m.Value));
+                }
+            }
+
+            foreach (var sd in sameKeyDeclaras)
+            {
+                if (sd.Value.Count < 2)
+                    continue;
+
+                var name = sd.Key.Substring(0, 1).ToUpper() + sd.Key.Substring(1);
+
+                sb.Append("public float Get" + name + "(int key) {\r\n");
+                sb.Append("switch (key){\r\n");
+                foreach (var kv in sd.Value.OrderBy(kv => kv))
+                    sb.Append("case " + kv + ": return Get" + name + kv + "();\r\n");
+                sb.Append("}\r\n");
+                sb.Append("return 0;\r\n");
+                sb.Append("}\r\n");
+
+                if (!canWrite)
+                    continue;
+
+                sb.Append("public void Set" + name + "(int key, float v) {\r\n");
+                sb.Append("switch (key){\r\n");
+                foreach (var kv in sd.Value.OrderBy(kv => kv))
+                    sb.Append("case " + kv + ": Set" + name + kv + "(v); break;\r\n");
+                sb.Append("}\r\n");
+                sb.Append("}\r\n");
             }
         }
 
         static int CmpLen(List<object> l, List<object> r)
         {
             var sr = (string) r[1];
+
             var sl = (string) l[1];
             return sr.Length.CompareTo(sl.Length);
         }
@@ -85,14 +121,11 @@ namespace exporter
         public static string DealWithFormulaSheetCS(ISheet sheet)
         {
             CodeTemplate.curlang = CodeTemplate.Langue.CS;
-
             StringBuilder sb = new StringBuilder();
             Dictionary<CellCoord, List<CellCoord>> abouts = new Dictionary<CellCoord, List<CellCoord>>();
             string sheetName = sheet.SheetName.Substring(3);
             string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
-
             string className = SheetName + "FormulaSheet";
-
             sb.Append("using System;\r\n");
             sb.Append("using System.Collections;\r\n");
             sb.Append("using System.Collections.Generic;\r\n");
@@ -100,7 +133,6 @@ namespace exporter
 
             // 扩展Config类统一获取某个表的实例对象
             sb.Append("public partial class Config {\r\n");
-
             sb.Append("\tpublic static " + className + " New" + className + "(){\r\n");
             sb.Append("\t\tvar formula = new " + className + "();\r\n");
             sb.Append("\t\tformula.Init();\r\n");
@@ -115,7 +147,9 @@ namespace exporter
             sb.Append("public void Init(){\r\n");
 
             // 数据内容
-            for (int rownum = 0; rownum <= sheet.LastRowNum; rownum++)
+            for (int rownum = 0;
+                rownum <= sheet.LastRowNum;
+                rownum++)
             {
                 IRow row = sheet.GetRow(rownum);
                 if (row == null)
@@ -166,6 +200,7 @@ namespace exporter
             // 数据影响关联递归统计
             bool change;
             do
+
             {
                 change = false;
                 foreach (var item in abouts)
@@ -193,7 +228,6 @@ namespace exporter
                           string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "};\r\n");
             sb.Append("} // 初始化数据结束\r\n");
 
-
             // 声明
             AppendCSDeclara(sheet, 0, true, sb);
             AppendCSDeclara(sheet, 3, false, sb);
@@ -207,11 +241,14 @@ namespace exporter
                 // 属性
                 sb.Append("\tpublic " + className + " sheet;\r\n");
                 sb.Append("\t int line;\r\n");
-                for (int i = 0; i < item.propertys.Count; i++)
+                for (int i = 0;
+                    i < item.propertys.Count;
+                    i++)
                     sb.Append("\tfloat " + item.propertys[i] + "; // " + item.notes[i] + "\r\n");
 
                 // 枚举方法
                 sb.Append("public bool MoveNext() {\r\n");
+
                 // MoveNext
                 sb.Append("\tif (line <= 0) {\r\n");
                 sb.Append("\t\tline = " + (item.start + 1) * 1000 + ";\r\n");
@@ -224,7 +261,9 @@ namespace exporter
                 sb.Append("\tif (sheet.get(line+" + (6 + 1000 * (item.key - 1)) + ") == 0 ) {\r\n");
                 sb.Append("\t\treturn MoveNext();\r\n");
                 sb.Append("}\r\n");
-                for (int i = 0; i < item.propertys.Count; i++)
+                for (int i = 0;
+                    i < item.propertys.Count;
+                    i++)
                     sb.Append("" + item.propertys[i] + " = sheet.get(line+" + (6 + 1000 * i) + ");\r\n");
                 sb.Append("\treturn true;\r\n");
                 sb.Append("} // 枚举方法next结束\r\n");
@@ -247,7 +286,7 @@ namespace exporter
 
         public static string ExportCS(string codeExportDir, string configExportDir)
         {
-            // 目录清理
+// 目录清理
             if (Directory.Exists(configExportDir))
                 new DirectoryInfo(configExportDir).GetFiles().Where(f => f.Extension == ".json")
                     .ToList().ForEach(fi => { fi.Delete(); });
@@ -258,7 +297,7 @@ namespace exporter
             new DirectoryInfo(codeExportDir).GetFiles("formula_*.cs").ToList<FileInfo>()
                 .ForEach(fi => { fi.Delete(); });
 
-            // stream加载的接口
+// stream加载的接口
             Dictionary<string, string> typestream_read = new Dictionary<string, string>();
             typestream_read.Add("int", "ReadInt32");
             typestream_read.Add("string", "ReadString");
@@ -267,7 +306,7 @@ namespace exporter
             typestream_read.Add("int32", "ReadInt32");
             typestream_read.Add("long", "ReadInt64");
 
-            // 类型转换
+// 类型转换
             Dictionary<string, string> typeconvert = new Dictionary<string, string>();
             typeconvert.Add("int", "int");
             typeconvert.Add("int32", "int");
@@ -282,7 +321,7 @@ namespace exporter
             typeconvert.Add("[]double", "double[]");
             typeconvert.Add("[]float", "float[]");
 
-            // 索引类型转换
+// 索引类型转换
             Dictionary<string, string> mapTypeConvert = new Dictionary<string, string>();
             mapTypeConvert.Add("int", "int");
             mapTypeConvert.Add("float", "float");
@@ -290,24 +329,23 @@ namespace exporter
             mapTypeConvert.Add("string", "string");
             mapTypeConvert.Add("float32", "float");
             mapTypeConvert.Add("double", "double");
-
             int goWriteCount = 0;
             List<string> loadfuncs = new List<string>();
             List<string> clearfuncs = new List<string>();
             List<string> savefuncs = new List<string>();
 
-            // 写公式
+// 写公式
             foreach (var formula in formulaContents)
             {
                 File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".cs", formula.Value,
                     new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
-                // lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
+// lock (loadfuncs) loadfuncs.Add("loadFormula" + formula.Key);
             }
 
             List<string> results = new List<string>();
 
-            // 写cs
+// 写cs
             foreach (var data in datas.Values)
             {
                 ThreadPool.QueueUserWorkItem(ooo =>
@@ -937,7 +975,7 @@ namespace exporter
                 });
             }
 
-            // 写json
+// 写json
             foreach (var data in datas.Values)
             {
                 ThreadPool.QueueUserWorkItem(ooo =>
@@ -1001,12 +1039,11 @@ namespace exporter
                 });
             }
 
-
-            // 格式化代码
+// 格式化代码
             while (goWriteCount < formulaContents.Count + datas.Values.Count)
                 Thread.Sleep(10);
 
-            // 写加载
+// 写加载
             loadfuncs.Sort();
             StringBuilder loadcode = new StringBuilder();
             loadcode.Append("using System;\r\n");
@@ -1014,36 +1051,34 @@ namespace exporter
             loadcode.Append("using System.Collections.Generic;\r\n");
             loadcode.Append("\r\n");
 
-            // 扩展Config类统一获取某个表的实例对象
+// 扩展Config类统一获取某个表的实例对象
             loadcode.Append("public partial class Config {\r\n");
 
-            // load all
+// load all
             loadcode.Append("\tpublic static void Load() {\r\n");
             foreach (var str in loadfuncs)
                 loadcode.Append("\t" + str + "();\r\n");
             loadcode.Append("}\r\n");
 
-            // clear all
+// clear all
             clearfuncs.Sort();
             loadcode.Append("\tpublic static void Clear() {\r\n");
             foreach (var str in clearfuncs)
                 loadcode.Append("\t" + str + "();\r\n");
             loadcode.Append("}\r\n");
 
-            // save all
+// save all
             savefuncs.Sort();
             loadcode.Append("\tpublic static void Save() {\r\n");
             foreach (var str in savefuncs)
                 loadcode.Append("\t" + str + "();\r\n");
             loadcode.Append("}\r\n");
-
             loadcode.Append("}\r\n");
             File.WriteAllText(codeExportDir + "load.cs", loadcode.ToString());
 
-            // 等待所有文件完成
+// 等待所有文件完成
             while (results.Count < datas.Values.Count * 2)
                 Thread.Sleep(TimeSpan.FromSeconds(0.01));
-
             return string.Empty;
         }
     }

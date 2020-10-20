@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace exporter
@@ -15,7 +16,12 @@ namespace exporter
     {
         static void AppendGoDeclara(ISheet sheet, int col, bool canWrite, StringBuilder sb)
         {
-            List<string> declaras = new List<string>();
+            Dictionary<string, List<int>> sameKeyDeclaras = new Dictionary<string, List<int>>();
+            Regex regex = new Regex(@"(\d+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+            string sheetName = sheet.SheetName.Substring(3);
+            string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
+
             for (int i = 0; i <= sheet.LastRowNum; i++)
             {
                 IRow row = sheet.GetRow(i);
@@ -33,8 +39,6 @@ namespace exporter
                 if (string.IsNullOrEmpty(note) || string.IsNullOrEmpty(name) || name.StartsWith("_"))
                     continue;
 
-                string sheetName = sheet.SheetName.Substring(3);
-                string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
                 sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() +
                               name.Substring(1) + "() float64 {//" + note);
                 sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
@@ -47,6 +51,41 @@ namespace exporter
                     sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
+
+                var m = regex.Match(name);
+                if (m.Success && name.Length > m.Value.Length)
+                {
+                    var key = name.Substring(0, name.Length - m.Value.Length);
+                    if (!sameKeyDeclaras.ContainsKey(key))
+                        sameKeyDeclaras.Add(key, new List<int>());
+                    sameKeyDeclaras[key].Add(int.Parse(m.Value));
+                }
+            }
+
+            foreach (var sd in sameKeyDeclaras)
+            {
+                if (sd.Value.Count < 2)
+                    continue;
+
+                var name = sd.Key.Substring(0, 1).ToUpper() + sd.Key.Substring(1);
+
+                sb.Append("func (ins *" + SheetName + "FormulaSheet) Get" + name + "(key int) float64 {\r\n");
+                sb.Append("switch (key){\r\n");
+                foreach (var kv in sd.Value.OrderBy(kv => kv))
+                    sb.Append("case " + kv + ": return ins.Get" + name + kv + "();\r\n");
+                sb.Append("}\r\n");
+                sb.Append("return 0;\r\n");
+                sb.Append("}\r\n");
+
+                if (!canWrite)
+                    continue;
+
+                sb.Append("func (ins *" + SheetName + "FormulaSheet) Set" + name + "(key int, v float64) {\r\n");
+                sb.Append("switch (key){\r\n");
+                foreach (var kv in sd.Value.OrderBy(kv => kv))
+                    sb.Append("case " + kv + ": ins.Set" + name + kv + "(v);\r\n");
+                sb.Append("}\r\n");
+                sb.Append("}\r\n");
             }
         }
 
