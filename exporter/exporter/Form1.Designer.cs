@@ -53,6 +53,7 @@
             this.label_ts = new System.Windows.Forms.Label();
             this.groupBox_tscfg = new System.Windows.Forms.GroupBox();
             this.label_tscfg = new System.Windows.Forms.Label();
+            this.singleCanNull = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -309,11 +310,23 @@
             this.label_tscfg.Text = "select folder";
             this.label_tscfg.Click += new System.EventHandler(this.label_Click);
             // 
+            // singleCanNull
+            // 
+            this.singleCanNull.AutoSize = true;
+            this.singleCanNull.Location = new System.Drawing.Point(230, 476);
+            this.singleCanNull.Name = "singleCanNull";
+            this.singleCanNull.Size = new System.Drawing.Size(102, 16);
+            this.singleCanNull.TabIndex = 11;
+            this.singleCanNull.Text = "SingleOneNull";
+            this.singleCanNull.UseVisualStyleBackColor = true;
+            this.singleCanNull.CheckedChanged += check_change;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(370, 611);
+            this.Controls.Add(this.singleCanNull);
             this.Controls.Add(this.isOutTS);
             this.Controls.Add(this.isOutCS);
             this.Controls.Add(this.isOutGO);
@@ -374,5 +387,6 @@
         private System.Windows.Forms.CheckBox isOutGO;
         private System.Windows.Forms.CheckBox isOutCS;
         private System.Windows.Forms.CheckBox isOutTS;
+        private System.Windows.Forms.CheckBox singleCanNull;
     }
 }

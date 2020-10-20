@@ -19,6 +19,9 @@ namespace exporter
         bool _isOutCs = false;
         bool _isOutTs = false;
 
+        static bool _singeCanNull = false;
+        public static bool SingleOneNull2Default => !_singeCanNull;
+
         public Form1(string[] args)
         {
             Console.WriteLine("初始化路径...");
@@ -32,13 +35,15 @@ namespace exporter
                     labelindex = int.Parse(arg.Substring(6));
 
             // 缓存初始化
-            Cache.Init(labellist[labelindex], argslist.Contains("divfloder") ? labelNames[labelindex].Split(':')[0] : "", argslist.Contains("cache"));
+            Cache.Init(labellist[labelindex],
+                argslist.Contains("divfloder") ? labelNames[labelindex].Split(':')[0] : "", argslist.Contains("cache"));
 
             // 导出语言初始化
             _isOutLua = argslist.Contains("out_lua");
             _isOutGo = argslist.Contains("out_go");
             _isOutCs = argslist.Contains("out_cs");
             _isOutTs = argslist.Contains("out_ts");
+            _singeCanNull = argslist.Contains("singeOneNull");
 
 
             if (argslist.Contains("nowindow"))
@@ -58,6 +63,7 @@ namespace exporter
                 isOutGO.Checked = _isOutGo;
                 isOutCS.Checked = _isOutCs;
                 isOutTS.Checked = _isOutTs;
+                singleCanNull.Checked = _singeCanNull;
 
                 foreach (string ln in labelNames)
                     labelSelect.Items.Add(ln);
@@ -74,19 +80,22 @@ namespace exporter
 
         void LoadPaths()
         {
-            pathConfigFile = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + pathConfigFile;
+            pathConfigFile = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar +
+                             pathConfigFile;
 
             if (File.Exists(pathConfigFile))
             {
                 var ps = File.ReadAllLines(pathConfigFile);
                 paths = new List<string>(ps);
             }
+
             for (int i = paths.Count - 1; i < PATH_LEN; i++)
             {
                 paths.Add("");
             }
 
-            string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName + Path.DirectorySeparatorChar + "labels";
+            string labelcfg = new FileInfo(Application.ExecutablePath).Directory.FullName +
+                              Path.DirectorySeparatorChar + "labels";
             string[] arr;
             if (File.Exists(labelcfg))
             {
@@ -94,7 +103,7 @@ namespace exporter
             }
             else
             {
-                arr = new string[] { "default" };
+                arr = new string[] {"default"};
                 File.WriteAllLines(labelcfg, arr);
             }
 
@@ -118,7 +127,8 @@ namespace exporter
                 CustomWorkbook.Init(paths[0], out readfiles);
                 if (readfiles.Count < 10)
                     readfiles.ForEach(Console.WriteLine);
-                Console.WriteLine("读入" + readfiles.Count + "张表," + (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
+                Console.WriteLine("读入" + readfiles.Count + "张表," +
+                                  (DateTime.Now - start).TotalSeconds.ToString("0.00") + "秒");
 
                 start = DateTime.Now;
                 if (!CheckError(Exporter.ReadDataXlsx())) return false;
@@ -189,7 +199,7 @@ namespace exporter
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            labels.AddRange(new Label[] { label1, label2, label3, label4, label_cs, label_cscfg, label_ts, label_tscfg });
+            labels.AddRange(new Label[] {label1, label2, label3, label4, label_cs, label_cscfg, label_ts, label_tscfg});
 
             for (int index = 0; index < paths.Count; index++)
             {
@@ -225,6 +235,7 @@ namespace exporter
                 Console.WriteLine(error);
                 return false;
             }
+
             return true;
         }
 
@@ -242,7 +253,8 @@ namespace exporter
                 return;
             }
 
-            Cache.Init(labellist[labelSelect.SelectedIndex], divfolder.Checked ? labelNames[labelSelect.SelectedIndex].Split(':')[0] : "", cacheTog.Checked);
+            Cache.Init(labellist[labelSelect.SelectedIndex],
+                divfolder.Checked ? labelNames[labelSelect.SelectedIndex].Split(':')[0] : "", cacheTog.Checked);
             DateTime start = DateTime.Now;
             if (Export())
             {
@@ -253,7 +265,7 @@ namespace exporter
 
         void check_change(object sender, EventArgs e)
         {
-            var cb = (CheckBox)sender;
+            var cb = (CheckBox) sender;
             if (cb.Name == "isOutLua")
             {
                 _isOutLua = cb.Checked;
@@ -270,8 +282,15 @@ namespace exporter
             {
                 _isOutTs = cb.Checked;
             }
+            else if (cb.Name == "singleCanNull")
+            {
+                _singeCanNull = cb.Checked;
+            }
         }
 
-        private void label_Click(object sender, EventArgs e) { SelectDir(labels.IndexOf((Label)sender)); }
+        private void label_Click(object sender, EventArgs e)
+        {
+            SelectDir(labels.IndexOf((Label) sender));
+        }
     }
 }
