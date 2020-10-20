@@ -23,7 +23,8 @@ namespace exporter
                     continue;
                 ICell cell1 = row.GetCell(col, MissingCellPolicy.RETURN_NULL_AND_BLANK);
                 ICell cell2 = row.GetCell(col + 1, MissingCellPolicy.RETURN_NULL_AND_BLANK);
-                if (cell1 == null || cell2 == null || cell1.CellType == CellType.Blank || cell2.CellType == CellType.Blank)
+                if (cell1 == null || cell2 == null || cell1.CellType == CellType.Blank ||
+                    cell2.CellType == CellType.Blank)
                     continue;
                 if (cell1.CellType != CellType.String || cell2.CellType != CellType.String)
                     throw new System.Exception("检查输入第" + (i + 1) + "行，sheetname=" + sheet.SheetName);
@@ -34,13 +35,15 @@ namespace exporter
 
                 string sheetName = sheet.SheetName.Substring(3);
                 string SheetName = sheetName.Substring(0, 1).ToUpper() + sheetName.Substring(1);
-                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "() float64 {//" + note);
+                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + name.Substring(0, 1).ToUpper() +
+                              name.Substring(1) + "() float64 {//" + note);
                 sb.AppendLine("return ins.get(" + ((i + 1) * 1000 + col + 3) + ")");
                 sb.AppendLine("}");
 
                 if (canWrite)
                 {
-                    sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() + name.Substring(1) + "(v float64) {//" + note);
+                    sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Set" + name.Substring(0, 1).ToUpper() +
+                                  name.Substring(1) + "(v float64) {//" + note);
                     sb.AppendLine("ins.set(" + ((i + 1) * 1000 + col + 3) + ",v)");
                     sb.AppendLine("}");
                 }
@@ -86,13 +89,18 @@ namespace exporter
 
                     if (cell.CellType == CellType.Boolean || cell.CellType == CellType.Numeric)
                     {
-                        sb.AppendLine(sheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 1000 + colnum + 1) + "] = " + (cell.CellType == CellType.Boolean ? (cell.BooleanCellValue ? 1 : 0).ToString() : cell.NumericCellValue.ToString()));
+                        sb.AppendLine(sheetName + "FormaulaTemplate.datas[" + ((rownum + 1) * 1000 + colnum + 1) +
+                                      "] = " + (cell.CellType == CellType.Boolean
+                                          ? (cell.BooleanCellValue ? 1 : 0).ToString()
+                                          : cell.NumericCellValue.ToString()));
                     }
                     else if (cell.CellType == CellType.Formula)
                     {
                         List<CellCoord> about;
-                        sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) + "] = func(ins *formulaSheet) float64 {");
-                        sb.AppendLine("return " + Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about));
+                        sb.AppendLine(sheetName + "FormaulaTemplate.funcs[" + ((rownum + 1) * 1000 + colnum + 1) +
+                                      "] = func(ins *formulaSheet) float64 {");
+                        sb.AppendLine("return " +
+                                      Formula2Code.Translate(sheet, cell.CellFormula, cell.ToString(), out about));
                         sb.AppendLine("}");
 
                         CellCoord cur = new CellCoord(rownum + 1, colnum + 1);
@@ -106,6 +114,7 @@ namespace exporter
                     }
                 }
             }
+
             // 数据影响关联递归统计
             bool change;
             do
@@ -132,7 +141,9 @@ namespace exporter
 
             // 数据影响关联
             foreach (var item in abouts)
-                sb.AppendLine(sheetName + "FormaulaTemplate.relation[" + (item.Key.row * 1000 + item.Key.col) + "] = []int32{" + string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "}");
+                sb.AppendLine(sheetName + "FormaulaTemplate.relation[" + (item.Key.row * 1000 + item.Key.col) +
+                              "] = []int32{" +
+                              string.Join(",", item.Value.Select(c => { return c.row * 1000 + c.col; })) + "}");
             sb.AppendLine("}");
 
             // 创建
@@ -181,7 +192,8 @@ namespace exporter
                 sb.AppendLine("");
 
                 // GetEnumerator
-                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" + item.fullName + " {");
+                sb.AppendLine("func (ins *" + SheetName + "FormulaSheet) Get" + item.name + "Enumerator() *" +
+                              item.fullName + " {");
                 sb.AppendLine("enumerator := &" + item.fullName + "{}");
                 sb.AppendLine("enumerator.sheet = ins");
                 sb.AppendLine("return enumerator");
@@ -195,7 +207,8 @@ namespace exporter
 
         public static string ExportGo(string codeExportDir, string configExportDir)
         {
-            configExportDir = configExportDir + Path.DirectorySeparatorChar + Cache.dfolder + Path.DirectorySeparatorChar;
+            configExportDir = configExportDir + Path.DirectorySeparatorChar + Cache.dfolder +
+                              Path.DirectorySeparatorChar;
             // 目录清理
             if (!Cache.enable)
             {
@@ -204,8 +217,10 @@ namespace exporter
                 else
                     Directory.CreateDirectory(configExportDir);
                 if (!Directory.Exists(codeExportDir)) Directory.CreateDirectory(codeExportDir);
-                new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
-                new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>().ForEach(fi => { fi.Delete(); });
+                new DirectoryInfo(codeExportDir).GetFiles("data_*.go").ToList<FileInfo>()
+                    .ForEach(fi => { fi.Delete(); });
+                new DirectoryInfo(codeExportDir).GetFiles("formula_*.go").ToList<FileInfo>()
+                    .ForEach(fi => { fi.Delete(); });
             }
 
             // 类型转换
@@ -234,7 +249,8 @@ namespace exporter
             Console.WriteLine("写入go公式");
             foreach (var formula in formulaContents)
             {
-                File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value, new UTF8Encoding(false));
+                File.WriteAllText(codeExportDir + "formula_" + formula.Key.ToLower() + ".go", formula.Value,
+                    new UTF8Encoding(false));
                 Interlocked.Increment(ref goWriteCount);
                 lock (loadFormulaFuncs) loadFormulaFuncs.Add("loadFormula" + formula.Key);
             }
@@ -255,10 +271,10 @@ namespace exporter
                     sb.AppendLine("\"encoding/json\"");
                     sb.AppendLine(")");
 
-                    data.files.Sort();
                     sb.AppendLine("// " + string.Join(",", data.files));
                     sb.AppendLine("type " + bigname + "Table struct {");
                     sb.AppendLine("Name string");
+                    sb.AppendLine("Crc32 string");
                     sb.AppendLine("Datas map[int32]*" + bigname + "Config");
                     sb.AppendLine("Group *" + bigname + "TableGroup");
                     sb.AppendLine("}");
@@ -272,25 +288,28 @@ namespace exporter
                             sb.Append("map[" + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + "]");
                         sb.AppendLine("[]int32");
                     }
+
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
                     sb.AppendLine("type " + bigname + "Config struct {");
                     for (int i = 0; i < data.keys.Count; i++)
                     {
-                        sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " + typeconvert[data.types[i]] + " " + "// " + data.keyNames[i]);
+                        sb.AppendLine(data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + " " +
+                                      typeconvert[data.types[i]] + " " + "// " + data.keyNames[i]);
                     }
+
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
                     sb.AppendLine("var _" + bigname + "Ins *" + bigname + "Table");
-                    sb.AppendLine("func loadSheet" + bigname + "(data []byte) error{");
+                    sb.AppendLine("func loadSheet" + bigname + "(data []byte) (interface{},error){");
                     lock (loadTableFuncs) loadTableFuncs.Add(data.name, "loadSheet" + bigname);
                     sb.AppendLine("tmp:=new(" + bigname + "Table)");
                     sb.AppendLine("err := json.Unmarshal(data,tmp)");
-                    sb.AppendLine("if err != nil { return err }");
+                    sb.AppendLine("if err != nil { return nil,err }");
                     sb.AppendLine("_" + bigname + "Ins=tmp");
-                    sb.AppendLine("return nil");
+                    sb.AppendLine("return tmp,nil");
                     sb.AppendLine("}");
                     sb.AppendLine("");
 
@@ -310,7 +329,8 @@ namespace exporter
                         sb.AppendLine("");
                         sb.Append("func(ins * " + bigname + "Table) Get_" + g.Key.Replace("|", "_") + "(");
                         foreach (var t in g.Value)
-                            sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " + mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
+                            sb.Append(t.Substring(0, 1).ToUpper() + t.Substring(1) + " " +
+                                      mapTypeConvert[typeconvert[data.types[data.keys.IndexOf(t)]]] + ",");
                         sb.Remove(sb.Length - 1, 1);
                         sb.AppendLine(") []*" + bigname + "Config {");
 
@@ -318,10 +338,12 @@ namespace exporter
                         {
                             sb.Append("if tmp" + i + ", ok:= ");
                             if (i == 0)
-                                sb.Append("ins.Group." + g.Key.Substring(0, 1).ToUpper() + g.Key.Replace("|", "_").Substring(1));
+                                sb.Append("ins.Group." + g.Key.Substring(0, 1).ToUpper() +
+                                          g.Key.Replace("|", "_").Substring(1));
                             else
                                 sb.Append("tmp" + (i - 1));
-                            sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) + "]; ok {");
+                            sb.AppendLine("[" + g.Value[i].Substring(0, 1).ToUpper() + g.Value[i].Substring(1) +
+                                          "]; ok {");
                         }
 
                         sb.AppendLine("ids:= tmp" + (g.Value.Length - 1));
@@ -341,8 +363,10 @@ namespace exporter
                     {
                         if (data.types[i] == "string" || data.types[i].StartsWith("[]"))
                             continue;
-                        sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) + "(id float64) float64 {");
-                        sb.AppendLine("return float64(Get" + bigname + "Table().Datas[int32(id)]." + data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
+                        sb.AppendLine("func data_" + data.name + "_vlookup_" + (data.cols[i] + 1) +
+                                      "(id float64) float64 {");
+                        sb.AppendLine("return float64(Get" + bigname + "Table().Datas[int32(id)]." +
+                                      data.keys[i].Substring(0, 1).ToUpper() + data.keys[i].Substring(1) + ")");
                         sb.AppendLine("}");
                     }
 
@@ -362,10 +386,10 @@ namespace exporter
                 {
                     JObject config = new JObject();
                     config["Name"] = data.name;
+                    config["Crc32"] = data.crc32;
 
                     JObject datas = new JObject();
                     config["Datas"] = datas;
-                    data.dataContent.Sort((a, b) => { return (int)a[0] - (int)b[0]; });
                     foreach (var line in data.dataContent)
                     {
                         try
@@ -374,8 +398,8 @@ namespace exporter
                             for (int j = 0; j < data.keys.Count; j++)
                                 ll[data.keys[j]] = JToken.FromObject(line[j]);
                             datas[line[0].ToString()] = ll;
-                        } 
-                        catch(Exception e) 
+                        }
+                        catch (Exception e)
                         {
                             // Console.WriteLine("序列化dataContent数据内容出错:" + e.Message);
                             throw new Exception("序列化dataContent数据内容出错:" + e.Message);
@@ -403,7 +427,9 @@ namespace exporter
                                 if (cur[key] == null) cur[key] = new JObject();
                                 cur = cur[key] as JObject;
                             }
-                            key = values[data.groupindexs[enumerator.Current.Key][enumerator.Current.Value.Length - 1]].ToString();
+
+                            key = values[data.groupindexs[enumerator.Current.Key][enumerator.Current.Value.Length - 1]]
+                                .ToString();
 
                             if (cur[key] == null) cur[key] = new JArray();
                             (cur[key] as JArray).Add(JToken.FromObject(values[0]));
@@ -459,7 +485,8 @@ namespace exporter
                 loadcode.AppendLine("if err != nil {");
                 loadcode.AppendLine("log.Fatal(\"%v\", err)");
                 loadcode.AppendLine("}");
-                loadcode.AppendLine("comm.RecountUseTime(start, fmt.Sprintf(\"load config(% v) success!!!\", len(ret)))");
+                loadcode.AppendLine(
+                    "comm.RecountUseTime(start, fmt.Sprintf(\"load config(% v) success!!!\", len(ret)))");
                 loadcode.AppendLine("}");
                 File.WriteAllText(codeExportDir + "load.go", loadcode.ToString());
             }

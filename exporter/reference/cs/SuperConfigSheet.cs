@@ -4,12 +4,11 @@
  * @Last Modified by: chiuan wei
  * @Last Modified time: 2017-11-06 23:35:56
  */
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using UnityEngine;
 
 /// <summary>
 /// 所有生成配置表的实例化方法都在这个Config里面
@@ -76,7 +75,9 @@ public class FormulaSheet : FormulaSheetTemplate
             return v;
         }
 
-        Debug.LogError("no value in sheet " + name + " with key = " + key +",请检查是否用Config.NewXXX来构造算法对象");
+#if UNITY_EDITOR
+        UnityEngine.Debug.LogError("no value in sheet " + name + " with key = " + key + ",请检查是否用Config.NewXXX来构造算法对象");
+#endif
         return 0;
     }
 
@@ -150,6 +151,7 @@ public class FormulaSheet : FormulaSheetTemplate
     }
 
     static Dictionary<int, int> _factcache;
+
     static Dictionary<int, int> factcache
     {
         get
@@ -159,10 +161,12 @@ public class FormulaSheet : FormulaSheetTemplate
                 _factcache = new Dictionary<int, int>();
                 _factcache[1] = 1;
             }
+
             return _factcache;
         }
         set { }
     }
+
     static int factmax = 1;
 
     public float excelFact(float a)
@@ -199,8 +203,8 @@ public class FormulaSheet : FormulaSheetTemplate
 
     public float excelRoundUp(float a, float b)
     {
-        var d = (float) Math.Pow(10, (double) b);
-        return (float) Mathf.Ceil(a * d) / d;
+        var d = Math.Pow(10, (double) b);
+        return (float) Math.Ceiling(((double) a * d) / d);
     }
 
     public float excelMax(params float[] args)
@@ -211,8 +215,9 @@ public class FormulaSheet : FormulaSheetTemplate
         var ret = args[0];
         foreach (var v in args)
         {
-            ret = Mathf.Max(ret, v);
+            ret = Math.Max(ret, v);
         }
+
         return ret;
     }
 
@@ -224,11 +229,11 @@ public class FormulaSheet : FormulaSheetTemplate
         var ret = args[0];
         foreach (var v in args)
         {
-            ret = Mathf.Min(ret, v);
+            ret = Math.Min(ret, v);
         }
+
         return ret;
     }
-
 }
 
 #region 配置表流加载功能
@@ -248,7 +253,7 @@ public abstract class StreamConfig : IConfigSerializer
     {
         using (var ms = new MemoryStream())
         {
-            using (BinaryWriter bw = new BinaryWriter(ms,Encoding.UTF8))
+            using (BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8))
             {
                 ToStream(bw);
 
@@ -266,14 +271,14 @@ public abstract class StreamConfig : IConfigSerializer
     {
         using (var ms = new MemoryStream(bytes))
         {
-            using (var br = new BinaryReader(ms,Encoding.UTF8))
+            using (var br = new BinaryReader(ms, Encoding.UTF8))
             {
                 FromStream(br);
             }
         }
     }
 
-    protected void ReadArray(BinaryReader br,ref int[] arr)
+    protected void ReadArray(BinaryReader br, ref int[] arr)
     {
         int _count = br.ReadInt32();
         arr = new int[_count];
@@ -282,7 +287,8 @@ public abstract class StreamConfig : IConfigSerializer
             arr[i] = br.ReadInt32();
         }
     }
-    protected void ReadArray(BinaryReader br,ref string[] arr)
+
+    protected void ReadArray(BinaryReader br, ref string[] arr)
     {
         int _count = br.ReadInt32();
         arr = new string[_count];
@@ -292,7 +298,7 @@ public abstract class StreamConfig : IConfigSerializer
         }
     }
 
-    protected void ReadArray(BinaryReader br,ref double[] arr)
+    protected void ReadArray(BinaryReader br, ref double[] arr)
     {
         int _count = br.ReadInt32();
         arr = new double[_count];
@@ -301,7 +307,8 @@ public abstract class StreamConfig : IConfigSerializer
             arr[i] = br.ReadDouble();
         }
     }
-    protected void ReadArray(BinaryReader br,ref long[] arr)
+
+    protected void ReadArray(BinaryReader br, ref long[] arr)
     {
         int _count = br.ReadInt32();
         arr = new long[_count];
@@ -310,7 +317,8 @@ public abstract class StreamConfig : IConfigSerializer
             arr[i] = br.ReadInt64();
         }
     }
-    protected void ReadArray(BinaryReader br,ref float[] arr)
+
+    protected void ReadArray(BinaryReader br, ref float[] arr)
     {
         int _count = br.ReadInt32();
         arr = new float[_count];
@@ -320,9 +328,9 @@ public abstract class StreamConfig : IConfigSerializer
         }
     }
 
-    public void WriteArray(BinaryWriter bw,ref int[] arr)
+    public void WriteArray(BinaryWriter bw, ref int[] arr)
     {
-        if(arr == null)
+        if (arr == null)
         {
             bw.Write(0);
             return;
@@ -338,13 +346,14 @@ public abstract class StreamConfig : IConfigSerializer
         }
     }
 
-    public void WriteArray(BinaryWriter bw,ref long[] arr)
+    public void WriteArray(BinaryWriter bw, ref long[] arr)
     {
-        if(arr == null)
+        if (arr == null)
         {
             bw.Write(0);
             return;
         }
+
         bw.Write(arr.Length);
         for (int i = 0; i < arr.Length; i++)
         {
@@ -352,13 +361,14 @@ public abstract class StreamConfig : IConfigSerializer
         }
     }
 
-    public void WriteArray(BinaryWriter bw,ref float[] arr)
+    public void WriteArray(BinaryWriter bw, ref float[] arr)
     {
-        if(arr == null)
+        if (arr == null)
         {
             bw.Write(0);
             return;
         }
+
         bw.Write(arr.Length);
         for (int i = 0; i < arr.Length; i++)
         {
@@ -366,13 +376,14 @@ public abstract class StreamConfig : IConfigSerializer
         }
     }
 
-    public void WriteArray(BinaryWriter bw,ref string[] arr)
+    public void WriteArray(BinaryWriter bw, ref string[] arr)
     {
-        if(arr == null)
+        if (arr == null)
         {
             bw.Write(0);
             return;
         }
+
         bw.Write(arr.Length);
         for (int i = 0; i < arr.Length; i++)
         {
@@ -380,20 +391,20 @@ public abstract class StreamConfig : IConfigSerializer
         }
     }
 
-    public void WriteArray(BinaryWriter bw,ref double[] arr)
+    public void WriteArray(BinaryWriter bw, ref double[] arr)
     {
-        if(arr == null)
+        if (arr == null)
         {
             bw.Write(0);
             return;
         }
+
         bw.Write(arr.Length);
         for (int i = 0; i < arr.Length; i++)
         {
             bw.Write(arr[i]);
         }
     }
-
 }
 
 #endregion

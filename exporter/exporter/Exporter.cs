@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using NPOI.Util;
 
 namespace exporter
 {
@@ -79,11 +81,15 @@ namespace exporter
     {
         static Dictionary<string, string> formulaContents = new Dictionary<string, string>();
 
-        static List<string> dataTypes = new List<string>() { "int", "long", "string", "double", "float", "[]int", "[]long", "[]string", "[]double", "[]float" };
+        static List<string> dataTypes = new List<string>()
+            {"int", "long", "string", "double", "float", "[]int", "[]long", "[]string", "[]double", "[]float"};
+
         static Dictionary<string, DataStruct> datas = new Dictionary<string, DataStruct>();
+
         class DataStruct
         {
             public readonly string name;
+            public string crc32;
             public bool isnew = true;
             public int labelindex = 0;
             public List<string> files = new List<string>();
@@ -97,8 +103,9 @@ namespace exporter
                 public string funcTypeParam; // PlayerUnit attacker, PlayerUnity target, ResultComponent rc
                 public List<string> data;
             }
+
             public Dictionary<string, FuncData> funcDatas = new Dictionary<string, FuncData>();
-            
+
 
             public DataStruct(string name)
             {
@@ -117,17 +124,21 @@ namespace exporter
             public Dictionary<string, int[]> groupindexs = new Dictionary<string, int[]>();
 
             public List<int> ids = new List<int>();
-            public List<List<object>> dataContent = new List<List<object>>(); // 导出列cols - 对应的一行行数值   : [行id(第一列) >[| | | | | | ]]
+
+            public List<List<object>>
+                dataContent = new List<List<object>>(); // 导出列cols - 对应的一行行数值   : [行id(第一列) >[| | | | | | ]]
+
             public Dictionary<int, Dictionary<int, object>>[] dataLabelModifys;
 
             public string TranslateLeft(string left)
             {
                 foreach (var line in dataContent)
                 {
-                    var key = (string)line[1];
-                    var value = (string)line[2];
+                    var key = (string) line[1];
+                    var value = (string) line[2];
                     left = left.Replace(key, value);
                 }
+
                 return left;
             }
 
@@ -135,10 +146,11 @@ namespace exporter
             {
                 foreach (var line in dataContent)
                 {
-                    var key = (string)line[1];
-                    var value = (string)line[3];
+                    var key = (string) line[1];
+                    var value = (string) line[3];
                     right = right.Replace(key, value);
                 }
+
                 return right;
             }
 
@@ -154,20 +166,23 @@ namespace exporter
                         data.funcName = arr[0];
                         data.funcTypeParam = arr[1].Substring(0, arr[1].Length - 1);
                         // 删除形式参数
-                        var par = new List<string>(data.funcTypeParam.Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries));
+                        var par = new List<string>(data.funcTypeParam.Split(new char[] {',', ' '},
+                            StringSplitOptions.RemoveEmptyEntries));
                         for (int j = par.Count - 1; j > 0; j -= 2)
                         {
                             par.RemoveAt(j);
                         }
+
                         data.funcType = string.Join(", ", par);
                         List<string> content = new List<string>();
                         data.data = content;
                         for (int k = 0; k < dataContent.Count; k++)
                         {
                             var c = dataContent[k];
-                            content.Add((string)c[i]);
+                            content.Add((string) c[i]);
                             c.RemoveAt(i);
                         }
+
                         funcDatas.Add(key, data);
                         cols.RemoveAt(i);
                         keys.RemoveAt(i);
@@ -201,19 +216,22 @@ namespace exporter
                 for (int i = 0; i < keys.Count; i++)
                 {
                     var key = keys[i];
-                    if(key.Contains("*")) 
+                    if (key.Contains("*"))
                     {
                         // 判断这个标签是否需要用来当前替换
                         var sps = key.Split('*');
-                        if(sps.Length != 2) {
+                        if (sps.Length != 2)
+                        {
                             return "[多语言] " + name + "表的" + key + "貌似不符合多语言标签列命名规则!?";
                         }
+
                         string target_key_name = sps[0];
                         string label = sps[1];
-                        if(Cache.labels.Contains(label) == false) continue; // ! 不需要导出
+                        if (Cache.labels.Contains(label) == false) continue; // ! 不需要导出
 
                         int key_index_i = keys.IndexOf(target_key_name);
-                        if (key_index_i < 0) {
+                        if (key_index_i < 0)
+                        {
                             return "[多语言] " + name + "表的" + key + "多语言标签替换找不到这个替换目标列名:" + target_key_name;
                         }
 
@@ -226,15 +244,14 @@ namespace exporter
                             // }
                             dataContent[id][key_index_i] = dataContent[id][i];
                         }
-
-                    } 
+                    }
                 }
 
                 bool _is_need_remove_label = false;
                 for (int i = 0; i < keys.Count;)
                 {
                     var key = keys[i];
-                    if(key.Contains("*")) 
+                    if (key.Contains("*"))
                     {
                         // Console.WriteLine("[多语言] 执行移除 这个表:" + name + "的是一列多语言列不需要导出:" + key);
                         keys.RemoveAt(i);
@@ -249,10 +266,11 @@ namespace exporter
 
                         // ! group记录的序号也要改一下
                         _is_need_remove_label = true;
-
-                    } else {
+                    }
+                    else
+                    {
                         i++;
-                    } 
+                    }
                 }
 
                 /*
@@ -269,7 +287,7 @@ namespace exporter
                             data.groupindexs.Add(g, indexs.ToArray());
                  */
 
-                if(_is_need_remove_label)
+                if (_is_need_remove_label)
                 {
                     Console.WriteLine("[多语言] 需要刷新一下记录的Group分组序号");
                     foreach (var g in groups)
@@ -283,6 +301,7 @@ namespace exporter
                                 return "找不到数据分组要的字段[" + dt + "]，SheetName = " + name;
                             indexs.Add(index);
                         }
+
                         groupindexs[g.Key] = indexs.ToArray();
                     }
                 }
@@ -298,6 +317,7 @@ namespace exporter
                 if (a[i] != b[i])
                     throw new Exception(msg);
         }
+
         static void Compare(List<int> a, List<int> b, string msg)
         {
             if (a.Count != b.Count) throw new Exception(msg);
@@ -312,40 +332,60 @@ namespace exporter
             try
             {
                 object codevalue = null;
-                if (CustomWorkbook.evaluateSheets.Contains(sheet.SheetName) && cell != null && cell.CellType == CellType.Formula)
+                if (CustomWorkbook.evaluateSheets.Contains(sheet.SheetName) && cell != null &&
+                    cell.CellType == CellType.Formula)
                 {
                     book.evaluator.DebugEvaluationOutputForNextEval = true;
                     CellValue cellValue = book.evaluator.Evaluate(cell);
                     switch (type)
                     {
                         case "int":
-                            codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt32(cellValue.NumberValue) :
-                                cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : int.Parse(cellValue.StringValue); break;
+                            codevalue = cellValue.CellType == CellType.Numeric
+                                ? Convert.ToInt32(cellValue.NumberValue)
+                                : cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue)
+                                    ? 0
+                                    : int.Parse(cellValue.StringValue);
+                            break;
                         case "long":
-                            codevalue = cellValue.CellType == CellType.Numeric ? Convert.ToInt64(cellValue.NumberValue) :
-                                cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : long.Parse(cellValue.StringValue); break;
+                            codevalue = cellValue.CellType == CellType.Numeric
+                                ? Convert.ToInt64(cellValue.NumberValue)
+                                : cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue)
+                                    ? 0
+                                    : long.Parse(cellValue.StringValue);
+                            break;
                         case "string":
-                            codevalue = cellValue.CellType == CellType.String ? cellValue.StringValue : cellValue.ToString(); break;
+                            codevalue = cellValue.CellType == CellType.String
+                                ? cellValue.StringValue
+                                : cellValue.ToString();
+                            break;
                         case "double":
                         case "float":
                         case "float64":
-                            codevalue = cellValue.CellType == CellType.Numeric ? cellValue.NumberValue :
-                                cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue) ? 0 : double.Parse(cellValue.StringValue); break;
+                            codevalue = cellValue.CellType == CellType.Numeric
+                                ? cellValue.NumberValue
+                                : cellValue.CellType != CellType.String || string.IsNullOrEmpty(cellValue.StringValue)
+                                    ? 0
+                                    : double.Parse(cellValue.StringValue);
+                            break;
                         default:
                             if (type.StartsWith("[]"))
                             {
-                                string[] arr = (cellValue.CellType == CellType.Numeric ? cellValue.NumberValue.ToString() : (cellValue.CellType == CellType.String ? cellValue.StringValue : "")).Split('|');
+                                string[] arr = (cellValue.CellType == CellType.Numeric
+                                    ? cellValue.NumberValue.ToString()
+                                    : (cellValue.CellType == CellType.String ? cellValue.StringValue : "")).Split('|');
                                 if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
                                 switch (type.Substring(2))
                                 {
                                     case "int":
                                         int[] v = new int[arr.Length];
-                                        for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
+                                        for (int ii = 0; ii < arr.Length; ii++)
+                                            v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
                                         codevalue = v;
                                         break;
                                     case "long":
                                         long[] v64 = new long[arr.Length];
-                                        for (int ii = 0; ii < arr.Length; ii++) v64[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : long.Parse(arr[ii]);
+                                        for (int ii = 0; ii < arr.Length; ii++)
+                                            v64[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : long.Parse(arr[ii]);
                                         codevalue = v64;
                                         break;
                                     case "string":
@@ -354,11 +394,13 @@ namespace exporter
                                     case "double":
                                     case "float":
                                         double[] vv = new double[arr.Length];
-                                        for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
+                                        for (int ii = 0; ii < arr.Length; ii++)
+                                            vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
                                         codevalue = vv;
                                         break;
                                 }
                             }
+
                             break;
                     }
                 }
@@ -376,37 +418,52 @@ namespace exporter
                     switch (type)
                     {
                         case "int":
-                            codevalue = ct == CellType.Numeric ? Convert.ToInt32(cell.NumericCellValue) :
-                                (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? int.Parse(cell.StringCellValue) : 0);
+                            codevalue = ct == CellType.Numeric
+                                ? Convert.ToInt32(cell.NumericCellValue)
+                                : (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue)
+                                    ? int.Parse(cell.StringCellValue)
+                                    : 0);
                             break;
                         case "long":
-                            codevalue = ct == CellType.Numeric ? Convert.ToInt64(cell.NumericCellValue) :
-                                (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue)) ? long.Parse(cell.StringCellValue) : 0; break;
+                            codevalue = ct == CellType.Numeric
+                                ? Convert.ToInt64(cell.NumericCellValue)
+                                : (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue))
+                                    ? long.Parse(cell.StringCellValue)
+                                    : 0;
+                            break;
                         case "string":
-                            codevalue = ct == CellType.Numeric ? cell.NumericCellValue.ToString() :
-                                (ct == CellType.String ? cell.StringCellValue : "");
+                            codevalue = ct == CellType.Numeric
+                                ? cell.NumericCellValue.ToString()
+                                : (ct == CellType.String ? cell.StringCellValue : "");
                             break;
                         case "double":
                         case "float":
                         case "float64":
-                            codevalue = ct == CellType.Numeric ? cell.NumericCellValue :
-                                (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue) ? double.Parse(cell.StringCellValue) : 0);
+                            codevalue = ct == CellType.Numeric
+                                ? cell.NumericCellValue
+                                : (ct == CellType.String && !string.IsNullOrEmpty(cell.StringCellValue)
+                                    ? double.Parse(cell.StringCellValue)
+                                    : 0);
                             break;
                         default:
                             if (type.StartsWith("[]"))
                             {
-                                string[] arr = (ct == CellType.Numeric ? cell.NumericCellValue.ToString() : (ct == CellType.String ? cell.StringCellValue : "")).Split('|');
+                                string[] arr = (ct == CellType.Numeric
+                                    ? cell.NumericCellValue.ToString()
+                                    : (ct == CellType.String ? cell.StringCellValue : "")).Split('|');
                                 if (arr.Length == 1 && string.IsNullOrEmpty(arr[0])) arr = new string[] { };
                                 switch (type.Substring(2))
                                 {
                                     case "int":
                                         int[] v = new int[arr.Length];
-                                        for (int ii = 0; ii < arr.Length; ii++) v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
+                                        for (int ii = 0; ii < arr.Length; ii++)
+                                            v[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : int.Parse(arr[ii]);
                                         codevalue = v;
                                         break;
                                     case "long":
                                         long[] v64 = new long[arr.Length];
-                                        for (int ii = 0; ii < arr.Length; ii++) v64[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : long.Parse(arr[ii]);
+                                        for (int ii = 0; ii < arr.Length; ii++)
+                                            v64[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : long.Parse(arr[ii]);
                                         codevalue = v64;
                                         break;
                                     case "string":
@@ -416,20 +473,24 @@ namespace exporter
                                     case "float":
                                     case "float64":
                                         double[] vv = new double[arr.Length];
-                                        for (int ii = 0; ii < arr.Length; ii++) vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
+                                        for (int ii = 0; ii < arr.Length; ii++)
+                                            vv[ii] = string.IsNullOrEmpty(arr[ii]) ? 0 : double.Parse(arr[ii]);
                                         codevalue = vv;
                                         break;
                                 }
                             }
+
                             break;
                     }
                 }
+
                 return codevalue;
             }
             catch (Exception ex)
             {
                 Console.Write(ex);
-                error = "数据格式有误， 第" + (cell.RowIndex + 1) + "行第" + (cell.ColumnIndex + 1) + "列， SheetName = " + sheet.SheetName + "，FileNames = " + book.fileName;
+                error = "数据格式有误， 第" + (cell.RowIndex + 1) + "行第" + (cell.ColumnIndex + 1) + "列， SheetName = " +
+                        sheet.SheetName + "，FileNames = " + book.fileName;
                 return null;
             }
         }
@@ -459,7 +520,8 @@ namespace exporter
                 List<string> types = new List<string>();
                 for (int i = 0; i < engRow.LastCellNum; i++)
                 {
-                    if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String || string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
+                    if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String ||
+                        string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
                         continue;
                     string key = engRow.GetCell(i).StringCellValue;
                     int keyindex = data.keys.IndexOf(key);
@@ -476,7 +538,8 @@ namespace exporter
                 for (int i = 4; i <= sheet.LastRowNum; i++)
                 {
                     IRow row = sheet.GetRow(i);
-                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0) == null || row.GetCell(0).CellType == CellType.Blank)
+                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0) == null ||
+                        row.GetCell(0).CellType == CellType.Blank)
                         continue;
 
                     ICell cell = row.GetCell(cols[0]);
@@ -484,7 +547,7 @@ namespace exporter
                     object codevalue = GetCodeValue(sheet, book, cell, types[0], out err);
                     if (!string.IsNullOrEmpty(err))
                         return err;
-                    int id = (int)codevalue;
+                    int id = (int) codevalue;
                     if (id == 0) continue;
                     if (data.dataLabelModifys[labelindex].ContainsKey(id))
                         return "id冲突，表名" + sheet.SheetName + ",id=" + id;
@@ -503,6 +566,7 @@ namespace exporter
                     }
                 }
             }
+
             return string.Empty;
         }
 
@@ -523,7 +587,8 @@ namespace exporter
                 }
                 catch (Exception e)
                 {
-                    return "deal with label sheet error : " + book.fileName + " - " + tableName + "\n" + e.Message + "\n" + e.StackTrace;
+                    return "deal with label sheet error : " + book.fileName + " - " + tableName + "\n" + e.Message +
+                           "\n" + e.StackTrace;
                 }
             }
 
@@ -559,18 +624,22 @@ namespace exporter
                     for (int i = 0; i < engRow.LastCellNum; i++)
                     {
                         // 如果列名没有 || 不是字符串 || 空字符串 都不需要导出
-                        if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String || string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
+                        if (engRow.GetCell(i) == null || engRow.GetCell(i).CellType != CellType.String ||
+                            string.IsNullOrEmpty(engRow.GetCell(i).StringCellValue))
                             continue;
 
                         // 记录有效的导出列位置
                         cols.Add(i);
 
                         string key = engRow.GetCell(i).StringCellValue;
-                        if (keys.Contains(key)) return "字段名重复 " + key + "，SheetName = " + tableName + "，FileName = " + book.fileName;
+                        if (keys.Contains(key))
+                            return "字段名重复 " + key + "，SheetName = " + tableName + "，FileName = " + book.fileName;
                         keys.Add(key);
 
                         // 列的中文字段名称
-                        keyNames.Add((cnRow == null || cnRow.GetCell(i) == null) ? "" : cnRow.GetCell(i).StringCellValue.Replace("\n", " "));
+                        keyNames.Add((cnRow == null || cnRow.GetCell(i) == null)
+                            ? ""
+                            : cnRow.GetCell(i).StringCellValue.Replace("\n", " "));
 
                         // 列的数值类型
                         string type = (tRow == null || tRow.GetCell(i) == null) ? " " : tRow.GetCell(i).StringCellValue;
@@ -594,7 +663,8 @@ namespace exporter
                     else
                     {
                         // ! 如果是老的表的话重新校验一下
-                        string error = "表头不一致，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
+                        string error = "表头不一致，SheetName = " + tableName + "，FileNames = " +
+                                       string.Join(",", data.files);
                         Compare(keys, data.keys, error);
                         Compare(keyNames, data.keyNames, error);
                         Compare(types, data.types, error);
@@ -603,7 +673,8 @@ namespace exporter
                 }
                 catch (Exception ex)
                 {
-                    return "表头错误，SheetName = " + tableName + "，FileName = " + book.fileName + "\n" + ex.ToString() + "\n" + ex.StackTrace;
+                    return "表头错误，SheetName = " + tableName + "，FileName = " + book.fileName + "\n" + ex.ToString() +
+                           "\n" + ex.StackTrace;
                 }
 
                 // 读取表头
@@ -631,9 +702,11 @@ namespace exporter
                             {
                                 int index = data.keys.IndexOf(dt);
                                 if (index == -1)
-                                    return "找不到数据分组要的字段[" + dt + "]，SheetName = " + tableName + "，FileName = " + book.fileName;
+                                    return "找不到数据分组要的字段[" + dt + "]，SheetName = " + tableName + "，FileName = " +
+                                           book.fileName;
                                 indexs.Add(index);
                             }
+
                             data.groups.Add(g, arr);
                             data.groupindexs.Add(g, indexs.ToArray());
                         }
@@ -641,10 +714,12 @@ namespace exporter
                     else
                     {
                         if (groups.Count != data.groups.Count)
-                            return "数据分组声明不一致，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
+                            return "数据分组声明不一致，SheetName = " + tableName + "，FileNames = " +
+                                   string.Join(",", data.files);
                         foreach (string g in groups)
                             if (!data.groups.ContainsKey(g))
-                                return "数据分组声明不一致，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
+                                return "数据分组声明不一致，SheetName = " + tableName + "，FileNames = " +
+                                       string.Join(",", data.files);
                     }
                 }
 
@@ -655,7 +730,8 @@ namespace exporter
                 for (int i = 4; i <= sheet.LastRowNum; i++)
                 {
                     IRow row = sheet.GetRow(i);
-                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0) == null || row.GetCell(0).CellType == CellType.Blank)
+                    if (row == null || row.FirstCellNum > 0 || row.GetCell(0) == null ||
+                        row.GetCell(0).CellType == CellType.Blank)
                         continue;
 
                     List<object> values = new List<object>();
@@ -669,7 +745,7 @@ namespace exporter
                         values.Add(codevalue); // 对应的这一行的每一列的数值都添加进来 - 对应的是有效的导出列的位置的数值
                     }
 
-                    int id = (int)values[0];
+                    int id = (int) values[0];
                     if (id == 0) continue;
                     if (id == -1)
                     {
@@ -681,10 +757,13 @@ namespace exporter
                             key += " ";
                             id = 99000000 + Math.Abs(key.GetHashCode()) % 1000000;
                         } while (ids.Contains(id));
+
                         values[0] = id;
                     }
+
                     if (ids.Contains(id))
-                        return "索引冲突 [" + values[0] + "]，SheetName = " + tableName + "，FileNames = " + string.Join(",", data.files);
+                        return "索引冲突 [" + values[0] + "]，SheetName = " + tableName + "，FileNames = " +
+                               string.Join(",", data.files);
 
                     bool useful = true;
                     var idcell = row.GetCell(data.cols[0]);
@@ -697,7 +776,7 @@ namespace exporter
                     if (useful)
                     {
                         // 添加id
-                        ids.Add((int)values[0]);
+                        ids.Add((int) values[0]);
                         // 添加数据
                         dataContent.Add(values);
                     }
@@ -736,6 +815,7 @@ namespace exporter
                         {
                             error = sheet.SheetName + ":" + ex.ToString();
                         }
+
                         lock (results)
                             results.Add(error);
                     });
@@ -760,7 +840,22 @@ namespace exporter
                     return err;
                 enumerator.Current.Value.ApplyFuncPrase();
             }
+
             Console.WriteLine("[多语言] 应用标签结束!");
+
+
+            Console.WriteLine("开始计算数据CRC32");
+            var crc32 = new CRC32();
+            foreach (var data in datas.Values)
+            {
+                data.files.Sort();
+                data.dataContent.Sort((a, b) => (int) a[0] - (int) b[0]);
+                var sb = new StringBuilder();
+                foreach (var dc in data.dataContent)
+                foreach (var c in dc)
+                    sb.Append(c);
+                data.crc32 = crc32.StringCRC(sb.ToString()).ToString();
+            }
 
             return string.Empty;
         }
