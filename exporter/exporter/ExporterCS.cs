@@ -522,8 +522,13 @@ namespace exporter
 
                     // ! > stream 读取
                     sb.Append("\tpublic override void FromStream(BinaryReader br){\r\n");
+
+
                     // 先定义一个长度
-                    sb.Append("\t\tint _count = 0;\r\n");
+                    if(data.groups.Count > 0)
+                    {
+                        sb.Append("\t\tint _count = 0;\r\n");
+                    }
 
                     foreach (var g in data.groups)
                     {
